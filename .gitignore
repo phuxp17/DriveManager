@@ -5,4 +5,4 @@ frontend/dist/
 .idea/
 .vscode/
 *.iml
-
+docs/
