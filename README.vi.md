@@ -156,9 +156,7 @@ DriveManager/
 │   │   │       ├── application-local.yml
 │   │   │       └── db/migration/   # Tập lệnh Flyway SQL migrations
 │   │   └── test/                   # Kiểm thử đơn vị & Testcontainers
-│   ├── pom.xml                     # Cấu hình dự án Maven
-│   ├── run-local.ps1               # Script khởi động backend (PowerShell)
-│   └── test-local.ps1              # Script kiểm thử cô lập
+│   └── pom.xml                     # Cấu hình dự án Maven
 ├── frontend/                       # React 18 + TypeScript + Vite Frontend
 │   ├── src/
 │   │   ├── api/                    # Tầng giao tiếp API & tự động xoay CSRF
@@ -225,12 +223,8 @@ docker compose ps
 
 ### 3. Chạy Backend
 
-#### Sử dụng PowerShell (Windows):
-```powershell
-powershell -NoProfile -File backend/run-local.ps1
-```
+Di chuyển vào thư mục `backend` và khởi chạy với profile `local`:
 
-#### Sử dụng Maven trực tiếp (Đa nền tảng Windows / Linux / macOS):
 ```bash
 cd backend
 mvn spring-boot:run -Dspring-boot.run.profiles=local
@@ -368,9 +362,10 @@ cd backend
 mvn test
 ```
 
-Nếu muốn chạy test trên database ngoài (không sử dụng Docker):
-```powershell
-powershell -NoProfile -File backend/test-local.ps1
+Nếu muốn chạy test trên database ngoài (không sử dụng Docker), cấu hình `USE_EXTERNAL_TEST_DATABASE=true` trong `.env` và chạy:
+```bash
+cd backend
+mvn test
 ```
 
 ### Kiểm thử Frontend

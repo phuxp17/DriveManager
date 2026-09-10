@@ -156,9 +156,7 @@ DriveManager/
 │   │   │       ├── application-local.yml
 │   │   │       └── db/migration/   # Flyway SQL migrations
 │   │   └── test/                   # Unit & Testcontainers integration tests
-│   ├── pom.xml                     # Maven build configuration
-│   ├── run-local.ps1               # Local runner script (PowerShell)
-│   └── test-local.ps1              # Isolated test runner script
+│   └── pom.xml                     # Maven build configuration
 ├── frontend/                       # React 18 + TypeScript + Vite Frontend
 │   ├── src/
 │   │   ├── api/                    # API client layer with CSRF rotation
@@ -225,12 +223,8 @@ docker compose ps
 
 ### 3. Run the Backend
 
-#### Using PowerShell (Windows):
-```powershell
-powershell -NoProfile -File backend/run-local.ps1
-```
+Navigate to the `backend` directory and start the application with the `local` profile:
 
-#### Using Maven directly (Cross-platform):
 ```bash
 cd backend
 mvn spring-boot:run -Dspring-boot.run.profiles=local
@@ -370,9 +364,10 @@ cd backend
 mvn test
 ```
 
-To run tests against an external PostgreSQL database (without requiring Docker):
-```powershell
-powershell -NoProfile -File backend/test-local.ps1
+To run tests against an external PostgreSQL database (without requiring Docker), set `USE_EXTERNAL_TEST_DATABASE=true` in `.env` and run:
+```bash
+cd backend
+mvn test
 ```
 
 ### Frontend Tests
