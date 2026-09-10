@@ -64,7 +64,6 @@ export const RegisterPage: React.FC = () => {
         password,
       });
 
-      // Register succeeded: redirect to login page (no auto-login as per contract)
       navigate('/login', { state: { registered: true } });
     } catch (err: any) {
       if (err?.status === 409) {

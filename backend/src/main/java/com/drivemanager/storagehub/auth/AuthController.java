@@ -24,6 +24,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.beans.factory.annotation.Value;
+import java.net.URI;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -34,18 +37,21 @@ public class AuthController {
     private final SessionAuthenticationStrategy sessionAuthenticationStrategy;
     private final SecurityContextRepository securityContextRepository;
     private final CsrfTokenRepository csrfTokenRepository;
+    private final String frontendUrl;
 
     public AuthController(
             AuthService authService,
             AuthenticationManager authenticationManager,
             SessionAuthenticationStrategy sessionAuthenticationStrategy,
             SecurityContextRepository securityContextRepository,
-            CsrfTokenRepository csrfTokenRepository) {
+            CsrfTokenRepository csrfTokenRepository,
+            @Value("${app.frontend-url}") String frontendUrl) {
         this.authService = authService;
         this.authenticationManager = authenticationManager;
         this.sessionAuthenticationStrategy = sessionAuthenticationStrategy;
         this.securityContextRepository = securityContextRepository;
         this.csrfTokenRepository = csrfTokenRepository;
+        this.frontendUrl = frontendUrl;
     }
 
     @PostMapping("/register")
@@ -58,6 +64,7 @@ public class AuthController {
                        HttpServletResponse servletResponse) {
         Authentication authentication = authenticationManager.authenticate(
                 UsernamePasswordAuthenticationToken.unauthenticated(request.email(), request.password()));
+        authService.requireVerifiedEmail(authentication.getName());
         sessionAuthenticationStrategy.onAuthentication(authentication, servletRequest, servletResponse);
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();
@@ -65,6 +72,14 @@ public class AuthController {
         SecurityContextHolder.setContext(context);
         securityContextRepository.saveContext(context, servletRequest, servletResponse);
         return authService.currentUser(authentication.getName());
+    }
+
+    @GetMapping("/verify")
+    ResponseEntity<Void> verify(@RequestParam String token) {
+        String result = authService.verifyEmail(token) ? "success" : "invalid";
+        return ResponseEntity.status(HttpStatus.SEE_OTHER)
+                .location(URI.create(frontendUrl + "/login?verification=" + result))
+                .build();
     }
 
     @GetMapping("/me")

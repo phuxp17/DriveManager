@@ -50,7 +50,17 @@ export const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children 
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <Navigate to="/app" replace />,
+    lazy: async () => {
+      const { HomePage } = await import('../features/home/HomePage');
+      return { Component: HomePage };
+    },
+  },
+  {
+    path: '/home',
+    lazy: async () => {
+      const { HomePage } = await import('../features/home/HomePage');
+      return { Component: HomePage };
+    },
   },
   {
     path: '/login',

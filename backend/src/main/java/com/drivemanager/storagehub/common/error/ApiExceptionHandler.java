@@ -14,6 +14,8 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import com.drivemanager.storagehub.auth.EmailAlreadyRegisteredException;
+import com.drivemanager.storagehub.auth.EmailDeliveryException;
+import com.drivemanager.storagehub.auth.EmailNotVerifiedException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import com.drivemanager.storagehub.item.ItemNotFoundException;
 import com.drivemanager.storagehub.item.UploadCapacityExceededException;
@@ -72,6 +74,18 @@ public class ApiExceptionHandler {
     ResponseEntity<ApiError> handleDuplicateEmail() {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ApiError.of(409, "EMAIL_ALREADY_REGISTERED", "An account already uses this email."));
+    }
+
+    @ExceptionHandler(EmailNotVerifiedException.class)
+    ResponseEntity<ApiError> handleUnverifiedEmail() {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiError.of(403, "EMAIL_NOT_VERIFIED", "Verify your email before signing in."));
+    }
+
+    @ExceptionHandler(EmailDeliveryException.class)
+    ResponseEntity<ApiError> handleEmailDelivery() {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ApiError.of(503, "EMAIL_DELIVERY_FAILED", "Verification email could not be sent. Try again."));
     }
 
     @ExceptionHandler(AuthenticationException.class)

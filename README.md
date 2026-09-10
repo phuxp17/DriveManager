@@ -11,11 +11,12 @@ DriveManager includes a Spring Boot backend and a React/Vite frontend. PostgreSQ
 
 ## Before you run
 
-1. Copy `.env.example` to the ignored `.env` file and set a non-empty `POSTGRES_PASSWORD`. Do not overwrite an existing `.env`.
+1. Copy `.env.example` to the ignored `.env` file and set non-empty `POSTGRES_PASSWORD` and `RESEND_API_KEY` values. Do not overwrite an existing `.env`.
 2. Ensure the configured `POSTGRES_PORT` is available. Use either an existing dedicated PostgreSQL database or start Docker Desktop and run `docker compose up -d postgres`.
 3. For Google Drive, create OAuth web credentials, add `http://localhost:3000/app/connections/callback` as an authorized redirect URI, then set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `GOOGLE_REDIRECT_URI` in `.env`.
-4. Install frontend dependencies once with `npm install` from `frontend/`.
-5. Start the backend first and confirm `http://localhost:8080/actuator/health` returns `UP`; then start the frontend.
+4. For production email, verify your domain in Resend and set `RESEND_FROM` to an address on that domain. The default `onboarding@resend.dev` sender is only suitable for account-owner testing.
+5. Install frontend dependencies once with `npm install` from `frontend/`.
+6. Start the backend first and confirm `http://localhost:8080/actuator/health` returns `UP`; then start the frontend.
 
 ## Run locally
 

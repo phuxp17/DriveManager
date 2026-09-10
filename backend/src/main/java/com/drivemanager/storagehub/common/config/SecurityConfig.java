@@ -46,7 +46,7 @@ public class SecurityConfig {
                 .addFilterBefore(rateLimitFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/actuator/health", "/api/v1/auth/register", "/api/v1/auth/login",
-                                "/api/v1/auth/csrf").permitAll()
+                                "/api/v1/auth/csrf", "/api/v1/auth/verify").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(errors -> errors
                         .authenticationEntryPoint((request, response, exception) -> apiErrorWriter.write(

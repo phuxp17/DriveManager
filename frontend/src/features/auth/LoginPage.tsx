@@ -5,6 +5,7 @@ import { Alert } from '../../components/common/Alert';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
 import { useAuth } from '../../context/AuthContext';
+import { ApiError } from '../../api/client';
 
 export const LoginPage: React.FC = () => {
   const { login } = useAuth();
@@ -18,6 +19,7 @@ export const LoginPage: React.FC = () => {
 
   // Read success message from registration if present
   const registrationSuccess = (location.state as any)?.registered;
+  const verification = new URLSearchParams(location.search).get('verification');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,11 +35,13 @@ export const LoginPage: React.FC = () => {
       await login({ email: email.trim(), password });
       const returnUrl = (location.state as any)?.from?.pathname || '/app';
       navigate(returnUrl, { replace: true });
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(
-        err?.status === 401
+        err instanceof ApiError && err.code === 'EMAIL_NOT_VERIFIED'
+          ? 'Bạn cần nhấn nút xác minh trong email trước khi đăng nhập.'
+          : err instanceof ApiError && err.status === 401
           ? 'Email hoặc mật khẩu không chính xác.'
-          : err?.message || 'Đăng nhập thất bại. Vui lòng thử lại.'
+          : err instanceof Error ? err.message : 'Đăng nhập thất bại. Vui lòng thử lại.'
       );
     } finally {
       setIsLoading(false);
@@ -93,8 +97,16 @@ export const LoginPage: React.FC = () => {
         {registrationSuccess && (
           <Alert
             type="success"
-            message="Đăng ký tài khoản thành công! Vui lòng đăng nhập bằng thông tin vừa tạo."
+            message="Đã gửi email xác minh. Hãy nhấn nút Xác minh email trước khi đăng nhập."
           />
+        )}
+
+        {verification === 'success' && (
+          <Alert type="success" message="Xác minh email thành công. Bạn có thể đăng nhập." />
+        )}
+
+        {verification === 'invalid' && (
+          <Alert type="error" message="Liên kết xác minh không hợp lệ, đã hết hạn hoặc đã được sử dụng." />
         )}
 
         {error && <Alert type="error" message={error} onClose={() => setError(null)} />}

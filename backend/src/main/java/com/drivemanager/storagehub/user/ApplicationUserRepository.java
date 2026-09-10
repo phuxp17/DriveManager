@@ -11,6 +11,9 @@ public interface ApplicationUserRepository extends JpaRepository<ApplicationUser
 
     Optional<ApplicationUser> findByNormalizedEmail(String normalizedEmail);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<ApplicationUser> findByEmailVerificationTokenHash(String tokenHash);
+
     boolean existsByNormalizedEmail(String normalizedEmail);
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select u from ApplicationUser u where u.id = :id")

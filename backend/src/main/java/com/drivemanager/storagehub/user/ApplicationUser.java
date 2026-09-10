@@ -32,10 +32,20 @@ public class ApplicationUser {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(name = "email_verified_at")
+    private Instant emailVerifiedAt;
+
+    @Column(name = "email_verification_token_hash", length = 64)
+    private String emailVerificationTokenHash;
+
+    @Column(name = "email_verification_expires_at")
+    private Instant emailVerificationExpiresAt;
+
     protected ApplicationUser() {
     }
 
-    public ApplicationUser(String email, String normalizedEmail, String passwordHash, String displayName) {
+    public ApplicationUser(String email, String normalizedEmail, String passwordHash, String displayName,
+                           boolean emailVerified) {
         this.id = UUID.randomUUID();
         this.email = email;
         this.normalizedEmail = normalizedEmail;
@@ -43,6 +53,7 @@ public class ApplicationUser {
         this.displayName = displayName;
         this.createdAt = Instant.now();
         this.updatedAt = this.createdAt;
+        this.emailVerifiedAt = emailVerified ? this.createdAt : null;
     }
 
     public UUID getId() {
@@ -64,5 +75,29 @@ public class ApplicationUser {
     public String getDisplayName() {
         return displayName;
     }
-}
 
+    public boolean isEmailVerified() {
+        return emailVerifiedAt != null;
+    }
+
+    public String getEmailVerificationTokenHash() {
+        return emailVerificationTokenHash;
+    }
+
+    public boolean verifyEmail(Instant now) {
+        if (isEmailVerified() || emailVerificationExpiresAt == null || now.isAfter(emailVerificationExpiresAt)) {
+            return false;
+        }
+        emailVerifiedAt = now;
+        emailVerificationTokenHash = null;
+        emailVerificationExpiresAt = null;
+        updatedAt = now;
+        return true;
+    }
+
+    public void startEmailVerification(String tokenHash, Instant expiresAt) {
+        emailVerificationTokenHash = tokenHash;
+        emailVerificationExpiresAt = expiresAt;
+    }
+
+}

@@ -32,6 +32,7 @@ class StorageHubApplicationTest {
 
     @DynamicPropertySource
     static void databaseProperties(DynamicPropertyRegistry registry) {
+        registry.add("resend.enabled", () -> false);
         if (Boolean.parseBoolean(System.getenv("USE_EXTERNAL_TEST_DATABASE"))) {
             String url = required("TEST_DATABASE_URL");
             if (url.toLowerCase(Locale.ROOT).contains("currentschema=")) {
