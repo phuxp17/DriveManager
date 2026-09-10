@@ -1,0 +1,87 @@
+.treeContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.treeNode {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+  color: var(--color-text);
+  transition: background-color var(--transition-fast);
+}
+
+.treeNode:hover {
+  background-color: var(--color-surface-hover);
+}
+
+.isSelected {
+  background-color: var(--color-primary-subtle);
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.nodeContent {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.expandBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+}
+
+.expandBtn:hover {
+  background-color: var(--color-surface-active);
+}
+
+.nodeName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.treeNode:hover .actions,
+.treeNode:focus-within .actions {
+  opacity: 1;
+}
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.actionBtn:hover {
+  background-color: var(--color-surface-active);
+  color: var(--color-text);
+}

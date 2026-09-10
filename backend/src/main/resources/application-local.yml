@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: ${JDBC_DATABASE_URL:jdbc:postgresql://localhost:${POSTGRES_PORT:5432}/${POSTGRES_DB:storage_hub}}
+server:
+  servlet:
+    session:
+      cookie:
+        secure: false
