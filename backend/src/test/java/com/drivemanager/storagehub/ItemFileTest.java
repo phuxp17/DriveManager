@@ -219,40 +219,40 @@ class ItemFileTest {
         String itemId = mapper.readTree(uploadRes.getResponse().getContentAsString()).get("id").asText();
 
         // 1. Full download (200 OK)
-        MvcResult fullDownload = mvc.perform(get("/api/v1/items/" + itemId + "/content").cookie(user.cookie()))
+        MvcResult asyncFull = mvc.perform(get("/api/v1/items/" + itemId + "/content").cookie(user.cookie()))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+        MvcResult fullDownload = mvc.perform(asyncDispatch(asyncFull))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.ACCEPT_RANGES, "bytes"))
                 .andExpect(header().string(HttpHeaders.CONTENT_LENGTH, "20"))
                 .andReturn();
-        if (fullDownload.getRequest().isAsyncStarted()) {
-            fullDownload = mvc.perform(asyncDispatch(fullDownload)).andReturn();
-        }
         assertThat(fullDownload.getResponse().getContentAsByteArray()).isEqualTo(content);
 
         // 2. Partial download range: bytes=0-4 -> "01234"
-        MvcResult rangeDownload = mvc.perform(get("/api/v1/items/" + itemId + "/content")
+        MvcResult asyncRange = mvc.perform(get("/api/v1/items/" + itemId + "/content")
                         .cookie(user.cookie())
                         .header(HttpHeaders.RANGE, "bytes=0-4"))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+        MvcResult rangeDownload = mvc.perform(asyncDispatch(asyncRange))
                 .andExpect(status().isPartialContent())
                 .andExpect(header().string(HttpHeaders.CONTENT_RANGE, "bytes 0-4/20"))
                 .andExpect(header().string(HttpHeaders.CONTENT_LENGTH, "5"))
                 .andReturn();
-        if (rangeDownload.getRequest().isAsyncStarted()) {
-            rangeDownload = mvc.perform(asyncDispatch(rangeDownload)).andReturn();
-        }
         assertThat(rangeDownload.getResponse().getContentAsString()).isEqualTo("01234");
 
         // 3. Partial download range: bytes=10-19 -> "ABCDEFGHIJ"
-        MvcResult rangeSuffix = mvc.perform(get("/api/v1/items/" + itemId + "/content")
+        MvcResult asyncSuffix = mvc.perform(get("/api/v1/items/" + itemId + "/content")
                         .cookie(user.cookie())
                         .header(HttpHeaders.RANGE, "bytes=10-19"))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+        MvcResult rangeSuffix = mvc.perform(asyncDispatch(asyncSuffix))
                 .andExpect(status().isPartialContent())
                 .andExpect(header().string(HttpHeaders.CONTENT_RANGE, "bytes 10-19/20"))
                 .andExpect(header().string(HttpHeaders.CONTENT_LENGTH, "10"))
                 .andReturn();
-        if (rangeSuffix.getRequest().isAsyncStarted()) {
-            rangeSuffix = mvc.perform(asyncDispatch(rangeSuffix)).andReturn();
-        }
         assertThat(rangeSuffix.getResponse().getContentAsString()).isEqualTo("ABCDEFGHIJ");
 
         // 4. Unsatisfiable range -> 416
