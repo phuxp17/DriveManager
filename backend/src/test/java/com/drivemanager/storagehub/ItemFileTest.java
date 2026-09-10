@@ -27,6 +27,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.task.support.TaskExecutorAdapter;
 import org.springframework.http.HttpHeaders;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
@@ -34,6 +35,8 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -326,7 +329,12 @@ class ItemFileTest {
     private record Browser(String email, Cookie cookie, String header, String token) {}
 
     @TestConfiguration
-    static class MockStorageConfiguration {
+    static class MockStorageConfiguration implements WebMvcConfigurer {
+        @Override
+        public void configureAsyncSupport(AsyncSupportConfigurer configurer) {
+            configurer.setTaskExecutor(new TaskExecutorAdapter(Runnable::run));
+        }
+
         @Bean @Primary
         MockGoogleOAuthClient mockGoogleOAuthClient() {
             return new MockGoogleOAuthClient();
