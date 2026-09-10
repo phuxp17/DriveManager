@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { HardDrive } from 'lucide-react';
 import { Alert } from '../../components/common/Alert';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
@@ -99,21 +98,7 @@ export const RegisterPage: React.FC = () => {
         }}
       >
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <div
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: 'var(--color-primary)',
-              color: 'var(--color-on-primary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 12px',
-            }}
-          >
-            <HardDrive size={24} />
-          </div>
+          <img src="/logo.png" alt="" width={56} height={56} style={{ display: 'block', margin: '0 auto 12px' }} />
           <h1 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--color-text)' }}>
             Tạo tài khoản mới
           </h1>

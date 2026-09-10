@@ -1,8 +1,38 @@
+# Secrets and machine-local configuration
 .env
+.env.*
+!.env.example
+!.env.production.example
+.secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Dependencies, builds and runtime output
 backend/target/
 frontend/node_modules/
 frontend/dist/
+frontend/coverage/
+*.log
+/logs/
+/tmp/
+/backups/
+*.sql.gz
+.deployed-tag
+
+# Editors and operating systems
 .idea/
 .vscode/
 *.iml
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local working documents
 docs/
+*.md
+!/README.md
+!/README.vi.md
+/.env.production.example
+/deploy/nginx-host.conf

@@ -15,7 +15,6 @@ import {
   Cloud,
   FilePlus,
   FolderOpen,
-  HardDrive,
   Home,
   Inbox,
   Link as LinkIcon,
@@ -221,7 +220,7 @@ export const AppShell: React.FC = () => {
       <aside ref={sidebarRef} id="app-sidebar" className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.brand}>
           <div className={styles.brandIcon}>
-            <HardDrive size={20} />
+            <img src="/logo.png" alt="" />
           </div>
           <span>DriveManager</span>
         </div>

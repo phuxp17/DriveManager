@@ -101,7 +101,7 @@ export const HomePage: React.FC = () => {
         <div className={styles.headerInner}>
           <Link to="/" className={styles.logoArea}>
             <div className={styles.logoIcon}>
-              <HardDrive size={20} />
+              <img src="/logo.png" alt="" />
               <span className={styles.pulseDot} />
             </div>
             <span>DriveManager</span>
