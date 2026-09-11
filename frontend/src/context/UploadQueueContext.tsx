@@ -46,7 +46,7 @@ export const UploadQueueProvider: React.FC<{ children: React.ReactNode }> = ({ c
         connectionId,
         progress: 0,
         status: 'failed',
-        error: `Kích thước tệp (${(file.size / (1024 * 1024)).toFixed(1)}MB) vượt quá giới hạn tối đa 50MB (52.428.800 bytes).`,
+        error: `Kích thước tệp (${(file.size / (1024 * 1024 * 1024)).toFixed(2)}GB) vượt quá giới hạn tối đa 5GB.`,
       };
       setItems((prev) => [...prev, failedItem]);
       setIsOpen(true);

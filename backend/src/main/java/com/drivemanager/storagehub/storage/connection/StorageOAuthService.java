@@ -88,7 +88,7 @@ public class StorageOAuthService {
     }
 
     @Transactional
-    public void complete(Pending pending, String code) {
+    public UUID complete(Pending pending, String code) {
         GoogleOAuthClient client = configured();
         GoogleToken token = client.exchange(code, pending.verifier());
         if (!hasRequiredScopes(token.scopes())) {
@@ -121,13 +121,21 @@ public class StorageOAuthService {
             target.reconnect(identity.email(), token.scopes(), encrypted);
         }
         connections.save(target);
+        return target.getId();
     }
 
     @Transactional(readOnly = true)
     public List<StorageConnectionDtos.ConnectionResponse> list(String email) {
         return connections.findByOwnerIdOrderByUpdatedAtDesc(owner(email)).stream()
-                .map(c -> new StorageConnectionDtos.ConnectionResponse(c.getId(), "GOOGLE", c.getDisplayName(),
-                        c.getStatus(), c.getGrantedScopes()))
+                .map(c -> {
+                    Long remaining = (c.getQuotaTotalBytes() != null && c.getQuotaTotalBytes() > 0)
+                            ? Math.max(0L, c.getQuotaTotalBytes() - (c.getQuotaUsedBytes() != null ? c.getQuotaUsedBytes() : 0L))
+                            : null;
+                    return new StorageConnectionDtos.ConnectionResponse(
+                            c.getId(), c.getProvider(), c.getDisplayName(), c.getStatus(), c.getGrantedScopes(),
+                            c.getQuotaTotalBytes(), c.getQuotaUsedBytes(), c.getQuotaUsageInDriveBytes(),
+                            remaining, c.getLastSyncedAt());
+                })
                 .toList();
     }
 

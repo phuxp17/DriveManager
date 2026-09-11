@@ -416,6 +416,20 @@ class ItemFileTest {
             return new ByteArrayInputStream(slice);
         }
 
+        @Override
+        public StorageQuota getStorageQuota(String accessToken) {
+            long used = files.values().stream().mapToLong(f -> f.data.length).sum();
+            return new StorageQuota(15L * 1024 * 1024 * 1024, used, used);
+        }
+
+        @Override
+        public DriveFileList listFiles(String accessToken, String pageToken, int pageSize) {
+            var list = files.values().stream()
+                    .map(f -> new DriveFileItem(f.id, f.filename, f.mimeType, (long) f.data.length, f.md5, "https://drive.google.com/file/d/" + f.id + "/view", false))
+                    .toList();
+            return new DriveFileList(list, null);
+        }
+
         private static String md5(byte[] data) {
             try {
                 byte[] hash = MessageDigest.getInstance("MD5").digest(data);

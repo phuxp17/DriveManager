@@ -399,6 +399,20 @@ class SharingTest {
             return new ByteArrayInputStream(slice);
         }
 
+        @Override
+        public StorageQuota getStorageQuota(String accessToken) {
+            long used = files.values().stream().mapToLong(b -> b.length).sum();
+            return new StorageQuota(15L * 1024 * 1024 * 1024, used, used);
+        }
+
+        @Override
+        public DriveFileList listFiles(String accessToken, String pageToken, int pageSize) {
+            var list = files.entrySet().stream()
+                    .map(e -> new DriveFileItem(e.getKey(), "file.bin", "application/octet-stream", (long) e.getValue().length, md5(e.getValue()), "https://drive.google.com/file/d/" + e.getKey() + "/view", false))
+                    .toList();
+            return new DriveFileList(list, null);
+        }
+
         private static String md5(byte[] data) {
             try {
                 byte[] hash = MessageDigest.getInstance("MD5").digest(data);

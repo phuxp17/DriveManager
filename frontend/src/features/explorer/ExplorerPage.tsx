@@ -183,11 +183,16 @@ export const ExplorerPage: React.FC = () => {
       // ignore
     }
 
-    if (item.type === 'LINK' && item.url) {
-      window.open(item.url, '_blank', 'noopener,noreferrer');
+    const targetUrl = item.driveUrl || (item.storageFileId ? `https://drive.google.com/file/d/${item.storageFileId}/view` : item.url);
+    if (targetUrl) {
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
     } else {
       window.open(itemsApi.getContentUrl(item.id), '_blank');
     }
+  };
+
+  const handleDownloadItem = (item: ItemEntry) => {
+    window.open(itemsApi.getContentUrl(item.id), '_blank');
   };
 
   const handleToggleFavorite = (item: ItemEntry) => {
@@ -241,6 +246,7 @@ export const ExplorerPage: React.FC = () => {
 
   const actionHandlers = {
     onOpen: handleOpenItem,
+    onDownload: handleDownloadItem,
     onViewDetails: (item: ItemEntry) => setDetailItemId(item.id),
     onToggleFavorite: handleToggleFavorite,
     onToggleReview: handleToggleReview,

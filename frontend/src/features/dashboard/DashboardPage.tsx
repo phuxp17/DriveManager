@@ -27,6 +27,7 @@ import { FileUploadModal } from '../../components/files/FileUploadModal';
 import { ItemDetailDrawer } from '../../components/items/ItemDetailDrawer';
 import { ItemTypeIcon } from '../../components/items/ItemTypeIcon';
 import { useAuth } from '../../context/AuthContext';
+import { formatBytes } from '../../utils/dateUtils';
 
 export const DashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -98,8 +99,9 @@ export const DashboardPage: React.FC = () => {
       // ignore
     }
 
-    if (item.type === 'LINK' && item.url) {
-      window.open(item.url, '_blank', 'noopener,noreferrer');
+    const targetUrl = item.driveUrl || (item.storageFileId ? `https://drive.google.com/file/d/${item.storageFileId}/view` : item.url);
+    if (targetUrl) {
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
     } else {
       window.open(itemsApi.getContentUrl(item.id), '_blank');
     }
@@ -540,8 +542,15 @@ export const DashboardPage: React.FC = () => {
                     backgroundColor: 'var(--color-bg)',
                   }}
                 >
-                  <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--color-text)' }}>
-                    {conn.displayName}
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--color-text)' }}>
+                      {conn.displayName}
+                    </div>
+                    {conn.quotaTotalBytes != null && conn.quotaTotalBytes > 0 && (
+                      <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                        Trống {formatBytes(conn.quotaRemainingBytes)} / {formatBytes(conn.quotaTotalBytes)}
+                      </div>
+                    )}
                   </div>
                   <span
                     style={{

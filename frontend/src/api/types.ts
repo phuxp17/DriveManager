@@ -24,6 +24,8 @@ export interface ItemEntry {
   deletedAt: string | null;
   favoritedAt: string | null;
   lastOpenedAt: string | null;
+  driveUrl?: string | null;
+  storageFileId?: string | null;
 }
 
 export interface ItemPage {
@@ -51,6 +53,8 @@ export interface ItemDetail {
   originalFilename: string | null;
   mimeType: string | null;
   sizeBytes: number | null;
+  driveUrl?: string | null;
+  storageFileId?: string | null;
 }
 
 export interface CreateLinkRequest {
@@ -133,6 +137,17 @@ export interface StorageConnection {
   displayName: string;
   status: string;
   grantedScopes: string;
+  quotaTotalBytes?: number | null;
+  quotaUsedBytes?: number | null;
+  quotaUsageInDriveBytes?: number | null;
+  quotaRemainingBytes?: number | null;
+  lastSyncedAt?: string | null;
+}
+
+export interface SyncResult {
+  newItems: number;
+  updatedItems: number;
+  totalItems: number;
 }
 
 export interface ConnectResponse {

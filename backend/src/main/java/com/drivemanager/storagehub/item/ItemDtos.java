@@ -16,11 +16,18 @@ public final class ItemDtos {
     public record ItemResponse(UUID id, UUID ownerId, Item.Type type, String name, String description,
                                String url, String domain, Instant createdAt, Instant updatedAt, long version,
                                Instant reviewedAt, Instant archivedAt, Instant deletedAt,
-                               String originalFilename, String mimeType, Long sizeBytes) {
+                               String originalFilename, String mimeType, Long sizeBytes,
+                               String storageFileId, String driveUrl) {
         public ItemResponse(UUID id, UUID ownerId, Item.Type type, String name, String description,
                             String url, String domain, Instant createdAt, Instant updatedAt, long version,
                             Instant reviewedAt, Instant archivedAt, Instant deletedAt) {
-            this(id, ownerId, type, name, description, url, domain, createdAt, updatedAt, version, reviewedAt, archivedAt, deletedAt, null, null, null);
+            this(id, ownerId, type, name, description, url, domain, createdAt, updatedAt, version, reviewedAt, archivedAt, deletedAt, null, null, null, null, null);
+        }
+        public ItemResponse(UUID id, UUID ownerId, Item.Type type, String name, String description,
+                            String url, String domain, Instant createdAt, Instant updatedAt, long version,
+                            Instant reviewedAt, Instant archivedAt, Instant deletedAt,
+                            String originalFilename, String mimeType, Long sizeBytes) {
+            this(id, ownerId, type, name, description, url, domain, createdAt, updatedAt, version, reviewedAt, archivedAt, deletedAt, originalFilename, mimeType, sizeBytes, null, null);
         }
     }
 }

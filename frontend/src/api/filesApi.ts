@@ -2,7 +2,7 @@ import { apiClient, ApiError } from './client';
 import { fetchCsrf, getCsrfHeaderName, getCsrfToken } from './csrf';
 import { ImportFileRequest, ItemDetail } from './types';
 
-export const MAX_FILE_SIZE_BYTES = 52_428_800; // 50 MiB (52.428.800 bytes)
+export const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024 * 1024; // 5 GiB (5.368.709.120 bytes)
 
 export const filesApi = {
   async importFile(payload: ImportFileRequest): Promise<ItemDetail> {
@@ -24,7 +24,7 @@ export const filesApi = {
       throw new ApiError(
         400,
         'FILE_TOO_LARGE',
-        `Kích thước tệp vượt quá giới hạn tối đa 50MB (52.428.800 bytes). Tệp của bạn: ${(file.size / (1024 * 1024)).toFixed(1)}MB.`
+        `Kích thước tệp vượt quá giới hạn tối đa 5GB. Tệp của bạn: ${(file.size / (1024 * 1024 * 1024)).toFixed(2)}GB.`
       );
     }
 

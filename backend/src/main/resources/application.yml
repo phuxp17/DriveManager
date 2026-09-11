@@ -22,8 +22,8 @@ spring:
     throw-exception-if-no-handler-found: true
   servlet:
     multipart:
-      max-file-size: 50MB
-      max-request-size: 51MB
+      max-file-size: 5GB
+      max-request-size: 5GB
 
 server:
   servlet:
@@ -52,6 +52,8 @@ management:
         enabled: true
 
 storage:
+  sync:
+    fixed-delay-ms: ${STORAGE_SYNC_DELAY_MS:900000}
   google:
     client-id: ${GOOGLE_CLIENT_ID:}
     client-secret: ${GOOGLE_CLIENT_SECRET:}

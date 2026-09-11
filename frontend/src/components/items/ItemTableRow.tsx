@@ -3,6 +3,7 @@ import {
   Archive,
   ArchiveRestore,
   CheckCircle2,
+  Download,
   ExternalLink,
   Eye,
   FolderPlus,
@@ -12,6 +13,7 @@ import {
   Trash2,
   Undo2,
 } from 'lucide-react';
+import { itemsApi } from '../../api/itemsApi';
 import { ItemEntry } from '../../api/types';
 import { formatDate } from '../../utils/dateUtils';
 import { DropdownMenu, DropdownMenuItem } from '../common/DropdownMenu';
@@ -22,6 +24,7 @@ export interface ItemActionHandlers {
   onOpen: (item: ItemEntry) => void;
   onViewDetails: (item: ItemEntry) => void;
   onToggleFavorite: (item: ItemEntry) => void;
+  onDownload?: (item: ItemEntry) => void;
   onToggleReview?: (item: ItemEntry) => void;
   onToggleArchive?: (item: ItemEntry) => void;
   onTrash?: (item: ItemEntry) => void;
@@ -46,10 +49,22 @@ export const ItemTableRow: React.FC<ItemTableRowProps> = ({ item, actions, curre
 
   const menuItems: (DropdownMenuItem | 'separator')[] = [
     {
-      label: item.type === 'LINK' ? 'Mở liên kết' : 'Tải / Mở tệp',
+      label: item.type === 'LINK' ? 'Mở liên kết' : 'Mở trên Google Drive',
       icon: <ExternalLink size={16} />,
       onClick: () => actions.onOpen(item),
     },
+    ...(item.type !== 'LINK'
+      ? [
+          {
+            label: 'Tải xuống máy',
+            icon: <Download size={16} />,
+            onClick: () =>
+              actions.onDownload
+                ? actions.onDownload(item)
+                : window.open(itemsApi.getContentUrl(item.id), '_blank'),
+          } as DropdownMenuItem,
+        ]
+      : []),
     {
       label: 'Xem chi tiết',
       icon: <Eye size={16} />,

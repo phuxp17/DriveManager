@@ -5,4 +5,5 @@ public interface StorageConnectionRepository extends JpaRepository<StorageConnec
     List<StorageConnection> findByOwnerIdOrderByUpdatedAtDesc(UUID ownerId);
     Optional<StorageConnection> findByIdAndOwnerId(UUID id, UUID ownerId);
     Optional<StorageConnection> findByOwnerIdAndProviderAndProviderIssuerAndProviderSubject(UUID ownerId, String provider, String issuer, String subject);
+    List<StorageConnection> findByStatus(String status);
 }

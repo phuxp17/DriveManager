@@ -117,6 +117,7 @@ public class ItemViewsService {
                     .replace("_", "!_") + "%");
             filter += " AND (i.name ILIKE :q ESCAPE '!' OR i.description ILIKE :q ESCAPE '!' "
                     + "OR l.url ILIKE :q ESCAPE '!' OR l.domain ILIKE :q ESCAPE '!' "
+                    + "OR fc.original_filename ILIKE :q ESCAPE '!' "
                     + "OR EXISTS (SELECT 1 FROM item_tags it JOIN tags t ON t.id=it.tag_id "
                     + "WHERE it.item_id=i.id AND t.owner_id=:owner AND t.name ILIKE :q ESCAPE '!') "
                     + "OR EXISTS (SELECT 1 FROM collection_items ci JOIN collections c ON c.id=ci.collection_id "
@@ -146,10 +147,13 @@ public class ItemViewsService {
             params.put("createdBefore", java.sql.Timestamp.from(search.createdBefore()));
         }
         // Only server-owned SQL fragments are concatenated; every caller value is bound.
-        String from = " FROM items i LEFT JOIN link_contents l ON l.item_id=i.id LEFT JOIN user_item_states s "
+        String from = " FROM items i LEFT JOIN link_contents l ON l.item_id=i.id LEFT JOIN file_contents fc ON fc.item_id=i.id LEFT JOIN user_item_states s "
                 + "ON s.item_id=i.id AND s.user_id=:owner WHERE " + filter;
         Long total = jdbc.queryForObject("SELECT COUNT(*)" + from, params, Long.class);
-        List<Entry> rows = jdbc.query("SELECT i.*,l.url,l.domain,s.favorited_at,s.last_opened_at" + from
+        List<Entry> rows = jdbc.query("SELECT i.*, "
+                + "COALESCE(l.url, CASE WHEN fc.storage_file_id IS NOT NULL THEN 'https://drive.google.com/file/d/' || fc.storage_file_id || '/view' ELSE NULL END) AS url, "
+                + "COALESCE(l.domain, CASE WHEN fc.storage_file_id IS NOT NULL THEN 'drive.google.com' ELSE NULL END) AS domain, "
+                + "s.favorited_at,s.last_opened_at" + from
                 + " ORDER BY " + order + " DESC,i.id DESC LIMIT :limit OFFSET :offset", params, (rs, row) -> new Entry(
                 rs.getObject("id", UUID.class), rs.getObject("owner_id", UUID.class), rs.getString("type"),
                 rs.getString("name"), rs.getString("description"), rs.getString("url"), rs.getString("domain"),

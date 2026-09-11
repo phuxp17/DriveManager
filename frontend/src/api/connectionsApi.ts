@@ -28,4 +28,18 @@ export const connectionsApi = {
       method: 'DELETE',
     });
   },
+
+  async sync(id: string): Promise<{ newItems: number; updatedItems: number; totalItems: number }> {
+    return apiClient<{ newItems: number; updatedItems: number; totalItems: number }>(
+      `/api/v1/storage-connections/${id}/sync`,
+      { method: 'POST' }
+    );
+  },
+
+  async syncAll(): Promise<{ newItems: number; updatedItems: number; totalItems: number }> {
+    return apiClient<{ newItems: number; updatedItems: number; totalItems: number }>(
+      '/api/v1/storage-connections/sync-all',
+      { method: 'POST' }
+    );
+  },
 };

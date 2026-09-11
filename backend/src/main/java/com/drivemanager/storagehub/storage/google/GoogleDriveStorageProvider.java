@@ -36,22 +36,39 @@ public class GoogleDriveStorageProvider implements StorageProvider {
         if (!configured) {
             throw new IllegalStateException("Google storage is not configured");
         }
-        // Google Drive multipart upload
         try {
-            var response = restClient.post()
-                    .uri("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,mimeType,size,md5Checksum")
+            // Initiate Resumable Upload session for Google Drive (supports large files up to GBs)
+            var initSpec = restClient.post()
+                    .uri("https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,name,mimeType,size,md5Checksum")
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                    .contentType(MediaType.parseMediaType("multipart/related; boundary=\"foo_bar_baz\""))
-                    .body(outputStream -> {
-                        String metadataPart = "--foo_bar_baz\r\n"
-                                + "Content-Type: application/json; charset=UTF-8\r\n\r\n"
-                                + json.writeValueAsString(Map.of("name", filename, "mimeType", mimeType)) + "\r\n"
-                                + "--foo_bar_baz\r\n"
-                                + "Content-Type: " + mimeType + "\r\n\r\n";
-                        outputStream.write(metadataPart.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-                        contentStream.transferTo(outputStream);
-                        outputStream.write("\r\n--foo_bar_baz--".getBytes(java.nio.charset.StandardCharsets.UTF_8));
-                    })
+                    .header("X-Upload-Content-Type", mimeType)
+                    .contentType(MediaType.APPLICATION_JSON);
+
+            if (sizeBytes > 0) {
+                initSpec.header("X-Upload-Content-Length", String.valueOf(sizeBytes));
+            }
+
+            var initResponse = initSpec
+                    .body(json.writeValueAsString(Map.of("name", filename, "mimeType", mimeType)))
+                    .retrieve()
+                    .toBodilessEntity();
+
+            String uploadUrl = initResponse.getHeaders().getFirst(HttpHeaders.LOCATION);
+            if (uploadUrl == null || uploadUrl.isBlank()) {
+                throw new IllegalStateException("Google Drive did not return resumable upload location");
+            }
+
+            // Stream file contents directly to upload URL
+            var putSpec = restClient.put()
+                    .uri(uploadUrl)
+                    .contentType(MediaType.parseMediaType(mimeType));
+
+            if (sizeBytes > 0) {
+                putSpec.header(HttpHeaders.CONTENT_LENGTH, String.valueOf(sizeBytes));
+            }
+
+            var response = putSpec
+                    .body(outputStream -> contentStream.transferTo(outputStream))
                     .retrieve()
                     .body(DriveFileResponse.class);
 
@@ -113,6 +130,80 @@ public class GoogleDriveStorageProvider implements StorageProvider {
         }
     }
 
+    @Override
+    public StorageQuota getStorageQuota(String accessToken) {
+        if (!configured) {
+            throw new IllegalStateException("Google storage is not configured");
+        }
+        try {
+            var response = restClient.get()
+                    .uri("https://www.googleapis.com/drive/v3/about?fields=storageQuota")
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                    .retrieve()
+                    .body(AboutResponse.class);
+
+            if (response == null || response.storageQuota() == null) {
+                return new StorageQuota(null, 0L, 0L);
+            }
+            StorageQuotaResponse q = response.storageQuota();
+            Long limit = (q.limit() != null && !q.limit().isBlank()) ? Long.parseLong(q.limit()) : null;
+            Long usage = (q.usage() != null && !q.usage().isBlank()) ? Long.parseLong(q.usage()) : 0L;
+            Long usageInDrive = (q.usageInDrive() != null && !q.usageInDrive().isBlank()) ? Long.parseLong(q.usageInDrive()) : 0L;
+            return new StorageQuota(limit, usage, usageInDrive);
+        } catch (Exception ex) {
+            throw new IllegalStateException("Error fetching Google Drive storage quota: " + ex.getMessage(), ex);
+        }
+    }
+
+    @Override
+    public DriveFileList listFiles(String accessToken, String pageToken, int pageSize) {
+        if (!configured) {
+            throw new IllegalStateException("Google storage is not configured");
+        }
+        try {
+            int size = Math.max(1, Math.min(pageSize, 100));
+            String uri = "https://www.googleapis.com/drive/v3/files?pageSize=" + size
+                    + "&fields=nextPageToken,files(id,name,mimeType,size,md5Checksum,webViewLink,trashed)"
+                    + "&q=trashed = false and mimeType != 'application/vnd.google-apps.folder'";
+
+            if (pageToken != null && !pageToken.isBlank()) {
+                uri += "&pageToken=" + java.net.URLEncoder.encode(pageToken, java.nio.charset.StandardCharsets.UTF_8);
+            }
+
+            var response = restClient.get()
+                    .uri(uri)
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                    .retrieve()
+                    .body(DriveFileListResponse.class);
+
+            if (response == null || response.files() == null) {
+                return new DriveFileList(java.util.List.of(), null);
+            }
+
+            java.util.List<DriveFileItem> items = response.files().stream().map(f -> {
+                long fSize = (f.size() != null && !f.size().isBlank()) ? Long.parseLong(f.size()) : 0L;
+                boolean trashed = Boolean.TRUE.equals(f.trashed());
+                return new DriveFileItem(f.id(), f.name(), f.mimeType(), fSize, f.md5Checksum(), f.webViewLink(), trashed);
+            }).toList();
+
+            return new DriveFileList(items, response.nextPageToken());
+        } catch (Exception ex) {
+            throw new IllegalStateException("Error listing files from Google Drive: " + ex.getMessage(), ex);
+        }
+    }
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record DriveFileResponse(String id, String name, String mimeType, String size, String md5Checksum) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record AboutResponse(StorageQuotaResponse storageQuota) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record StorageQuotaResponse(String limit, String usage, String usageInDrive) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record DriveFileListResponse(String nextPageToken, java.util.List<DriveFileItemResponse> files) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record DriveFileItemResponse(String id, String name, String mimeType, String size, String md5Checksum, String webViewLink, Boolean trashed) {}
 }

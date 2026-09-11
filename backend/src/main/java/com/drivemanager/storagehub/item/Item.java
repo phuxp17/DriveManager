@@ -37,9 +37,9 @@ public class Item {
         item.link = new LinkContent(item, url, domain);
         return item;
     }
-    static Item file(UUID ownerId, String name, String description, Type type,
-                     UUID storageConnectionId, String storageFileId, String originalFilename,
-                     String mimeType, long sizeBytes, String md5Checksum) {
+    public static Item file(UUID ownerId, String name, String description, Type type,
+                            UUID storageConnectionId, String storageFileId, String originalFilename,
+                            String mimeType, long sizeBytes, String md5Checksum) {
         Item item = new Item();
         item.id = UUID.randomUUID();
         item.ownerId = ownerId;
@@ -51,7 +51,7 @@ public class Item {
         item.file = new FileContent(item, storageConnectionId, storageFileId, originalFilename, mimeType, sizeBytes, md5Checksum);
         return item;
     }
-    void updateMetadata(String name, String description) {
+    public void updateMetadata(String name, String description) {
         if (name != null) this.name = name;
         if (description != null) this.description = description;
         updatedAt = Instant.now();

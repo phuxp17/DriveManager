@@ -75,7 +75,7 @@ public class GoogleOAuthConfiguration {
                     + "&redirect_uri=" + e(p.getRedirectUri())
                     + "&response_type=code&access_type=offline&prompt=" + e("consent select_account")
                     + "&include_granted_scopes=true&scope="
-                    + e("openid email https://www.googleapis.com/auth/drive.file")
+                    + e("openid email https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly")
                     + "&state=" + e(state) + "&code_challenge=" + e(challenge) + "&code_challenge_method=S256";
         }
 

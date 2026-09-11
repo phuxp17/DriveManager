@@ -6,4 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface FileContentRepository extends JpaRepository<FileContent, UUID> {
     Optional<FileContent> findByItemId(UUID itemId);
+    Optional<FileContent> findByStorageConnectionIdAndStorageFileId(UUID storageConnectionId, String storageFileId);
 }

@@ -8,12 +8,14 @@ import { Button } from '../common/Button';
 import { Input, Textarea } from '../common/Input';
 import { Modal } from '../common/Modal';
 
+import { formatBytes } from '../../utils/dateUtils';
+
 interface FileUploadModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const MAX_FILE_SIZE = 52_428_800; // 50 MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024; // 5 GB
 
 export const FileUploadModal: React.FC<FileUploadModalProps> = ({ open, onOpenChange }) => {
   const { enqueueUpload } = useUploadQueue();
@@ -44,11 +46,20 @@ export const FileUploadModal: React.FC<FileUploadModalProps> = ({ open, onOpenCh
     }
   }, [open]);
 
+  const selectedConn = connections.find((c) => c.id === selectedConnectionId);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selected = e.target.files[0];
       if (selected.size > MAX_FILE_SIZE) {
-        setError('Tệp tin vượt quá dung lượng tối đa cho phép (50 MB).');
+        setError('Tệp tin vượt quá dung lượng tối đa cho phép (5 GB).');
+        setFile(null);
+        return;
+      }
+      if (selectedConn?.quotaRemainingBytes != null && selected.size > selectedConn.quotaRemainingBytes) {
+        setError(
+          `Dung lượng tệp (${formatBytes(selected.size)}) vượt quá dung lượng còn trống trên Google Drive (${formatBytes(selectedConn.quotaRemainingBytes)}).`
+        );
         setFile(null);
         return;
       }
@@ -117,7 +128,7 @@ export const FileUploadModal: React.FC<FileUploadModalProps> = ({ open, onOpenCh
             >
               {connections.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.displayName} ({c.provider})
+                  {c.displayName} {c.quotaRemainingBytes != null ? `(Còn trống ${formatBytes(c.quotaRemainingBytes)})` : `(${c.provider})`}
                 </option>
               ))}
             </select>
@@ -126,7 +137,7 @@ export const FileUploadModal: React.FC<FileUploadModalProps> = ({ open, onOpenCh
 
         <div>
           <label style={{ fontSize: '14px', fontWeight: 500, color: 'var(--color-text)', display: 'block', marginBottom: '6px' }}>
-            Chọn tệp tin (Tối đa 50 MB) <span style={{ color: 'var(--color-danger)' }}>*</span>
+            Chọn tệp tin (Tối đa 5 GB) <span style={{ color: 'var(--color-danger)' }}>*</span>
           </label>
           <input
             type="file"

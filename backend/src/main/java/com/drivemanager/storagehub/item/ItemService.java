@@ -61,12 +61,27 @@ public class ItemService {
     public static ItemResponse response(Item item) {
         LinkContent link = item.getLink();
         FileContent file = item.getFile();
+        String url = link != null ? link.getUrl() : null;
+        String domain = link != null ? link.getDomain() : null;
+        String storageFileId = null;
+        String driveUrl = null;
+
+        if (file != null) {
+            storageFileId = file.getStorageFileId();
+            driveUrl = "https://drive.google.com/file/d/" + storageFileId + "/view";
+            if (url == null) {
+                url = driveUrl;
+                domain = "drive.google.com";
+            }
+        }
+
         return new ItemResponse(item.getId(), item.getOwnerId(), item.getType(), item.getName(), item.getDescription(),
-                link == null ? null : link.getUrl(), link == null ? null : link.getDomain(),
+                url, domain,
                 item.getCreatedAt(), item.getUpdatedAt(), item.getVersion(),
                 item.getReviewedAt(), item.getArchivedAt(), item.getDeletedAt(),
                 file == null ? null : file.getOriginalFilename(),
                 file == null ? null : file.getMimeType(),
-                file == null ? null : file.getSizeBytes());
+                file == null ? null : file.getSizeBytes(),
+                storageFileId, driveUrl);
     }
 }

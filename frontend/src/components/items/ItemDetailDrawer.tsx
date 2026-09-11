@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import {
   Calendar,
+  Check,
   Clock,
+  Copy,
   Download,
   Edit2,
   ExternalLink,
@@ -77,6 +79,43 @@ export const ItemDetailDrawer: React.FC<ItemDetailDrawerProps> = ({
   if (!itemId) return null;
 
   const isOwner = !currentUserId || !item || currentUserId === item.ownerId;
+  const [copied, setCopied] = useState(false);
+
+  const getCanonicalDriveUrl = () => {
+    if (!item) return null;
+    if (item.driveUrl) return item.driveUrl;
+    if (item.storageFileId) return `https://drive.google.com/file/d/${item.storageFileId}/view`;
+    if (item.url && item.url.includes('drive.google.com')) return item.url;
+    return null;
+  };
+
+  const handleCopyLink = () => {
+    const url = item?.type === 'LINK' ? item.url : getCanonicalDriveUrl();
+    if (url) {
+      navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleOpenGoogleDrive = async () => {
+    if (!item) return;
+    try {
+      await lifecycleApi.recordOpen(item.id);
+    } catch {
+      // ignore
+    }
+    const driveUrl = getCanonicalDriveUrl() || item.url;
+    if (driveUrl) {
+      window.open(driveUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const handleDownload = () => {
+    if (!item) return;
+    const downloadUrl = itemsApi.getContentUrl(item.id);
+    window.open(downloadUrl, '_blank');
+  };
 
   const handleOpenContent = async () => {
     if (!item) return;
@@ -89,8 +128,7 @@ export const ItemDetailDrawer: React.FC<ItemDetailDrawerProps> = ({
     if (item.type === 'LINK' && item.url) {
       window.open(item.url, '_blank', 'noopener,noreferrer');
     } else {
-      const downloadUrl = itemsApi.getContentUrl(item.id);
-      window.open(downloadUrl, '_blank');
+      handleOpenGoogleDrive();
     }
   };
 
@@ -269,33 +307,105 @@ export const ItemDetailDrawer: React.FC<ItemDetailDrawerProps> = ({
           {/* Content actions */}
           <div
             style={{
-              padding: '12px 16px',
+              padding: '16px',
               backgroundColor: 'var(--color-bg)',
               borderRadius: 'var(--radius-md)',
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
+              flexDirection: 'column',
               gap: '12px',
+              border: '1px solid var(--color-border)',
             }}
           >
-            <div style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: '13px',
+                color: 'var(--color-text-muted)',
+              }}
+            >
               {item.type === 'LINK' ? (
                 <span>Liên kết web ngoài</span>
               ) : (
                 <span>
-                  {item.originalFilename || 'Tệp nhị phân'} &bull; {formatBytes(item.sizeBytes)}
+                  {item.originalFilename || 'Tệp Google Drive'} &bull; {formatBytes(item.sizeBytes)}
                 </span>
               )}
             </div>
 
-            <Button
-              variant="primary"
-              size="sm"
-              icon={item.type === 'LINK' ? <ExternalLink size={16} /> : <Download size={16} />}
-              onClick={handleOpenContent}
-            >
-              {item.type === 'LINK' ? 'Mở liên kết' : 'Tải xuống nội dung'}
-            </Button>
+            {/* Display Canonical URL if available */}
+            {(item.type === 'LINK' ? item.url : getCanonicalDriveUrl()) && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  backgroundColor: 'var(--color-surface)',
+                  padding: '8px 12px',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--color-border)',
+                }}
+              >
+                <div
+                  style={{
+                    flex: 1,
+                    fontSize: '12px',
+                    fontFamily: 'monospace',
+                    color: 'var(--color-primary)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                  title={item.type === 'LINK' ? item.url || '' : getCanonicalDriveUrl() || ''}
+                >
+                  {item.type === 'LINK' ? item.url : getCanonicalDriveUrl()}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={copied ? <Check size={14} color="var(--color-success)" /> : <Copy size={14} />}
+                  onClick={handleCopyLink}
+                  title="Sao chép đường dẫn Google Drive chuẩn"
+                >
+                  {copied ? 'Đã chép' : 'Sao chép'}
+                </Button>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+              {item.type === 'LINK' ? (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={<ExternalLink size={16} />}
+                  onClick={() => item.url && window.open(item.url, '_blank', 'noopener,noreferrer')}
+                >
+                  Mở liên kết
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={<Download size={16} />}
+                    onClick={handleDownload}
+                    title="Tải tệp tin về thiết bị thông qua máy chủ"
+                  >
+                    Tải xuống máy
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    icon={<ExternalLink size={16} />}
+                    onClick={handleOpenGoogleDrive}
+                    title="Mở trực tiếp trên giao diện Google Drive"
+                  >
+                    Mở trong Google Drive
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Metadata Grid */}

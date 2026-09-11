@@ -138,8 +138,9 @@ export const CollectionPage: React.FC = () => {
     } catch {
       // ignore
     }
-    if (item.type === 'LINK' && item.url) {
-      window.open(item.url, '_blank', 'noopener,noreferrer');
+    const targetUrl = item.driveUrl || (item.storageFileId ? `https://drive.google.com/file/d/${item.storageFileId}/view` : item.url);
+    if (targetUrl) {
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
     } else {
       window.open(itemsApi.getContentUrl(item.id), '_blank');
     }
@@ -447,6 +448,7 @@ export const CollectionPage: React.FC = () => {
                 currentUserId={user?.id}
                 actions={{
                   onOpen: handleOpenItem,
+                  onDownload: (i) => window.open(itemsApi.getContentUrl(i.id), '_blank'),
                   onViewDetails: (i) => setDetailItemId(i.id),
                   onToggleFavorite: handleToggleFavorite,
                   onToggleReview: handleToggleReview,

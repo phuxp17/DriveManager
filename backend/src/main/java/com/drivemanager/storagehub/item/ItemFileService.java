@@ -26,7 +26,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 @Service
 public class ItemFileService {
 
-    public static final long MAX_FILE_SIZE = 50 * 1024 * 1024L; // 50 MB
+    public static final long MAX_FILE_SIZE = 5L * 1024 * 1024 * 1024L; // 5 GB
     private static final Pattern RANGE_PATTERN = Pattern.compile("^bytes=(\\d+)-(\\d*)$");
 
     private final ItemRepository items;
@@ -64,7 +64,7 @@ public class ItemFileService {
             throw new IllegalArgumentException("Upload file must not be empty");
         }
         if (file.getSize() > MAX_FILE_SIZE) {
-            throw new IllegalArgumentException("File size exceeds 50MB limit");
+            throw new IllegalArgumentException("File size exceeds 5GB limit");
         }
         UUID userId = auth.currentUser(principal).id();
         StorageConnection connection = connections.findByIdAndOwnerId(connectionId, userId)
