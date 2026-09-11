@@ -18,7 +18,26 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class StorageOAuthService {
-    private static final Set<String> REQUIRED_SCOPES = Set.of("openid", "email", "https://www.googleapis.com/auth/drive.file");
+    private static final Set<String> EMAIL_SCOPES = Set.of(
+            "email",
+            "https://www.googleapis.com/auth/userinfo.email"
+    );
+    private static final Set<String> DRIVE_SCOPES = Set.of(
+            "https://www.googleapis.com/auth/drive.file",
+            "https://www.googleapis.com/auth/drive"
+    );
+
+    public static boolean hasRequiredScopes(String grantedScopes) {
+        if (grantedScopes == null || grantedScopes.isBlank()) {
+            return false;
+        }
+        Set<String> granted = Set.of(grantedScopes.split(" "));
+        boolean hasOpenId = granted.contains("openid");
+        boolean hasEmail = granted.stream().anyMatch(EMAIL_SCOPES::contains);
+        boolean hasDrive = granted.stream().anyMatch(DRIVE_SCOPES::contains);
+        return hasOpenId && hasEmail && hasDrive;
+    }
+
     private final StorageConnectionRepository connections;
     private final OAuthAuthorizationRepository authorizations;
     private final ApplicationUserRepository users;
@@ -59,9 +78,10 @@ public class StorageOAuthService {
 
     @Transactional
     public Pending consume(String email, String sessionId, String state) {
-        OAuthAuthorization a = authorizations.lockByStateDigest(digest(state)).orElseThrow(IllegalArgumentException::new);
+        OAuthAuthorization a = authorizations.lockByStateDigest(digest(state))
+                .orElseThrow(() -> new IllegalArgumentException("Invalid or expired OAuth state"));
         if (!a.consumeIfValid(owner(email), sessionId)) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("OAuth authorization request is invalid, already consumed, or expired");
         }
         authorizations.save(a);
         return new Pending(a.getOwnerId(), a.getConnectionId(), cipher.decrypt(a.getId(), a.encryptedPkceVerifier(), CredentialCipher.Purpose.OAUTH_PKCE));
@@ -71,7 +91,7 @@ public class StorageOAuthService {
     public void complete(Pending pending, String code) {
         GoogleOAuthClient client = configured();
         GoogleToken token = client.exchange(code, pending.verifier());
-        if (token.scopes() == null || !Set.of(token.scopes().split(" ")).containsAll(REQUIRED_SCOPES)) {
+        if (!hasRequiredScopes(token.scopes())) {
             throw new IllegalArgumentException("Required Google scopes were not granted");
         }
         GoogleIdentity identity = validator().validate(token.idToken());

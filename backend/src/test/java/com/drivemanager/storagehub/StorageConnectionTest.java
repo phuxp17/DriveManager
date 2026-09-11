@@ -164,6 +164,28 @@ class StorageConnectionTest {
     }
 
     @Test
+    void callbackAcceptsCanonicalGoogleScopesUrl() throws Exception {
+        Browser user = browser();
+        mockGoogleClient.nextScopes = "openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/drive.file";
+        mockGoogleValidator.subject = "sub-" + UUID.randomUUID();
+        mockGoogleValidator.email = "drive-canonical-" + UUID.randomUUID() + "@example.com";
+
+        String authUrl = mapper.readTree(call(user, post("/api/v1/storage-connections/google/connect"), 200)
+                .getResponse().getContentAsString()).get("authorizationUrl").asText();
+        String state = extractQueryParam(authUrl, "state");
+
+        mvc.perform(get("/api/v1/storage-connections/google/callback")
+                        .cookie(user.cookie()).param("state", state).param("code", "canonical-scope-code"))
+                .andExpect(status().isNoContent());
+
+        MvcResult listRes = mvc.perform(get("/api/v1/storage-connections").cookie(user.cookie()))
+                .andExpect(status().isOk()).andReturn();
+        JsonNode listNode = mapper.readTree(listRes.getResponse().getContentAsString());
+        assertThat(listNode.size()).isPositive();
+        assertThat(listNode.get(0).get("displayName").asText()).isEqualTo(mockGoogleValidator.email);
+    }
+
+    @Test
     void reconnectFlowValidatesSubjectAndPreservesOrRotatesRefreshToken() throws Exception {
         Browser user = browser();
         String origSubject = "sub-" + UUID.randomUUID();

@@ -34,8 +34,12 @@ public class ApiExceptionHandler {
             MethodArgumentTypeMismatchException.class,
             MissingServletRequestParameterException.class
     })
-    ResponseEntity<ApiError> handleIllegalArgument() {
-        return ResponseEntity.badRequest().body(ApiError.of(400, "VALIDATION_ERROR", "The request is invalid."));
+    ResponseEntity<ApiError> handleIllegalArgument(Exception ex) {
+        log.warn("Validation or bad request failure: {}", ex.getMessage());
+        String message = (ex instanceof IllegalArgumentException && ex.getMessage() != null && !ex.getMessage().isBlank())
+                ? ex.getMessage()
+                : "The request is invalid.";
+        return ResponseEntity.badRequest().body(ApiError.of(400, "VALIDATION_ERROR", message));
     }
 
     @ExceptionHandler({NoHandlerFoundException.class, ItemNotFoundException.class})

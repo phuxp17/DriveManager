@@ -36,20 +36,16 @@ export const OAuthCallbackPage: React.FC = () => {
     if (callbackExecutedRef.current) return;
     callbackExecutedRef.current = true;
 
-    const controller = new AbortController();
-    connectionsApi.completeGoogleCallback(stateParam, codeParam, controller.signal)
+    connectionsApi.completeGoogleCallback(stateParam, codeParam)
       .then(() => {
         queryClient.invalidateQueries({ queryKey: ['connections'] });
         setStatus('success');
         setMessage('Tài khoản Google Drive đã được kết nối thành công!');
       })
       .catch((err: any) => {
-        if (err?.name === 'AbortError') return;
         setStatus('error');
         setMessage(err?.message || 'Không thể hoàn tất kết nối Google Drive. Vui lòng thử lại.');
       });
-
-    return () => controller.abort();
   }, [codeParam, errorParam, stateParam]);
 
   return (

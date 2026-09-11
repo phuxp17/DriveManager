@@ -3,6 +3,8 @@ package com.drivemanager.storagehub.storage.google;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Condition;
@@ -20,6 +22,8 @@ import org.springframework.web.client.RestClient;
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(GoogleProperties.class)
 public class GoogleOAuthConfiguration {
+
+    private static final Logger log = LoggerFactory.getLogger(GoogleOAuthConfiguration.class);
 
     @Bean
     @Conditional(GoogleConfigured.class)
@@ -69,25 +73,31 @@ public class GoogleOAuthConfiguration {
         public String authorizationUrl(String state, String challenge) {
             return "https://accounts.google.com/o/oauth2/v2/auth?client_id=" + e(p.getClientId())
                     + "&redirect_uri=" + e(p.getRedirectUri())
-                    + "&response_type=code&access_type=offline&prompt=select_account+consent&scope="
+                    + "&response_type=code&access_type=offline&prompt=" + e("consent select_account")
+                    + "&include_granted_scopes=true&scope="
                     + e("openid email https://www.googleapis.com/auth/drive.file")
                     + "&state=" + e(state) + "&code_challenge=" + e(challenge) + "&code_challenge_method=S256";
         }
 
         @Override
         public GoogleToken exchange(String code, String verifier) {
-            var body = http.post().uri("https://oauth2.googleapis.com/token")
-                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                    .body("code=" + e(code) + "&client_id=" + e(p.getClientId())
-                            + "&client_secret=" + e(p.getClientSecret())
-                            + "&redirect_uri=" + e(p.getRedirectUri())
-                            + "&grant_type=authorization_code&code_verifier=" + e(verifier))
-                    .retrieve()
-                    .body(TokenBody.class);
-            if (body == null || body.id_token() == null) {
-                throw new IllegalArgumentException("Google authorization failed");
+            try {
+                var body = http.post().uri("https://oauth2.googleapis.com/token")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .body("code=" + e(code) + "&client_id=" + e(p.getClientId())
+                                + "&client_secret=" + e(p.getClientSecret())
+                                + "&redirect_uri=" + e(p.getRedirectUri())
+                                + "&grant_type=authorization_code&code_verifier=" + e(verifier))
+                        .retrieve()
+                        .body(TokenBody.class);
+                if (body == null || body.id_token() == null) {
+                    throw new IllegalArgumentException("Google authorization failed");
+                }
+                return new GoogleToken(body.id_token(), body.refresh_token(), body.scope());
+            } catch (HttpClientErrorException ex) {
+                log.error("Google token exchange failed: status={} body={}", ex.getStatusCode(), ex.getResponseBodyAsString());
+                throw new IllegalArgumentException("Google token exchange failed: " + ex.getResponseBodyAsString(), ex);
             }
-            return new GoogleToken(body.id_token(), body.refresh_token(), body.scope());
         }
 
         @Override
