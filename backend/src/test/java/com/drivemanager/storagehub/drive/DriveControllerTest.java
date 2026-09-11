@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 class DriveControllerTest {
@@ -108,8 +109,12 @@ class DriveControllerTest {
         when(driveService.downloadFile(eq("user@example.com"), eq(accountId), eq("file-1"), isNull(), isNull()))
                 .thenReturn(dl);
 
-        mockMvc.perform(get("/api/drive-accounts/" + accountId + "/files/file-1/content")
+        MvcResult asyncResult = mockMvc.perform(get("/api/drive-accounts/" + accountId + "/files/file-1/content")
                         .principal(principal))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(asyncResult))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Disposition", "inline; filename=\"doc.txt\""))
                 .andExpect(header().string("Content-Type", "text/plain"))
