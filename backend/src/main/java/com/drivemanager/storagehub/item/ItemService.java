@@ -40,8 +40,9 @@ public class ItemService {
     public ItemResponse get(String principal, UUID id) {
         UUID currentUserId = auth.currentUser(principal).id();
         Item item = items.findByIdAndDeletedAtIsNull(id).orElseThrow(ItemNotFoundException::new);
-        if (item.getOwnerId().equals(currentUserId) || sharing.hasViewAccess(id, currentUserId)) {
-            return response(item);
+        boolean isOwner = item.getOwnerId().equals(currentUserId);
+        if (isOwner || sharing.hasViewAccess(id, currentUserId)) {
+            return response(item, isOwner);
         }
         throw new ItemNotFoundException();
     }
@@ -59,6 +60,9 @@ public class ItemService {
         return items.findByIdAndOwnerIdAndDeletedAtIsNull(id, auth.currentUser(principal).id()).orElseThrow(ItemNotFoundException::new);
     }
     public static ItemResponse response(Item item) {
+        return response(item, true);
+    }
+    private static ItemResponse response(Item item, boolean includeStorageConnectionId) {
         LinkContent link = item.getLink();
         FileContent file = item.getFile();
         String url = link != null ? link.getUrl() : null;
@@ -68,7 +72,7 @@ public class ItemService {
 
         UUID storageConnectionId = null;
         if (file != null) {
-            storageConnectionId = file.getStorageConnectionId();
+            storageConnectionId = includeStorageConnectionId ? file.getStorageConnectionId() : null;
             storageFileId = file.getStorageFileId();
             driveUrl = "https://drive.google.com/file/d/" + storageFileId + "/view";
             if (url == null) {
