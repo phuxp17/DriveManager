@@ -14,11 +14,13 @@ import {
   RefreshCw,
   Save,
   Tag as TagIcon,
+  User,
   X,
 } from 'lucide-react';
+import { connectionsApi } from '../../api/connectionsApi';
 import { itemsApi } from '../../api/itemsApi';
 import { lifecycleApi } from '../../api/lifecycleApi';
-import { ItemDetail } from '../../api/types';
+import { ItemDetail, StorageConnection } from '../../api/types';
 import { formatBytes, formatDateTime } from '../../utils/dateUtils';
 import { Alert } from '../common/Alert';
 import { Button } from '../common/Button';
@@ -41,8 +43,13 @@ export const ItemDetailDrawer: React.FC<ItemDetailDrawerProps> = ({
   onUpdated,
 }) => {
   const [item, setItem] = useState<ItemDetail | null>(null);
+  const [connections, setConnections] = useState<StorageConnection[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    connectionsApi.list().then(setConnections).catch(() => {});
+  }, []);
 
   // Edit states
   const [isEditing, setIsEditing] = useState(false);
@@ -440,6 +447,26 @@ export const ItemDetailDrawer: React.FC<ItemDetailDrawerProps> = ({
             <div>
               <div style={{ fontWeight: 500, color: 'var(--color-text)' }}>Trạng thái duyệt</div>
               <div>{item.reviewedAt ? 'Đã xem xét' : 'Chưa duyệt (Inbox)'}</div>
+            </div>
+
+            {item.type !== 'LINK' && (
+              <div>
+                <div style={{ fontWeight: 500, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <HardDrive size={14} color="#4285F4" /> Tài khoản lưu trữ
+                </div>
+                <div style={{ marginTop: '2px' }}>
+                  {connections.find((c) => c.id === item.storageConnectionId)?.displayName || 'Google Drive'}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <div style={{ fontWeight: 500, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <User size={14} /> Tài khoản sở hữu
+              </div>
+              <div style={{ marginTop: '2px' }}>
+                {isOwner ? 'Chính bạn (Tài khoản hiện tại)' : `Người dùng #${item.ownerId.slice(0, 8)}`}
+              </div>
             </div>
 
             {item.mimeType && (

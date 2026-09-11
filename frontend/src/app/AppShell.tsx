@@ -15,6 +15,7 @@ import {
   Cloud,
   FilePlus,
   FolderOpen,
+  HardDrive,
   Home,
   Inbox,
   Link as LinkIcon,
@@ -280,6 +281,17 @@ export const AppShell: React.FC = () => {
             >
               <Home size={18} />
               <span>Trang chủ</span>
+            </NavLink>
+
+            <NavLink
+              to="/app/drive"
+              className={({ isActive }) =>
+                `${styles.navItem} ${isActive ? styles.navItemActive : ''}`
+              }
+              onClick={closeSidebar}
+            >
+              <HardDrive size={18} color="#4285F4" />
+              <span>Google Drive</span>
             </NavLink>
           </div>
 

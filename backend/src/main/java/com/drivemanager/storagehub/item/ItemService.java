@@ -66,7 +66,9 @@ public class ItemService {
         String storageFileId = null;
         String driveUrl = null;
 
+        UUID storageConnectionId = null;
         if (file != null) {
+            storageConnectionId = file.getStorageConnectionId();
             storageFileId = file.getStorageFileId();
             driveUrl = "https://drive.google.com/file/d/" + storageFileId + "/view";
             if (url == null) {
@@ -82,6 +84,6 @@ public class ItemService {
                 file == null ? null : file.getOriginalFilename(),
                 file == null ? null : file.getMimeType(),
                 file == null ? null : file.getSizeBytes(),
-                storageFileId, driveUrl);
+                storageFileId, driveUrl, storageConnectionId);
     }
 }

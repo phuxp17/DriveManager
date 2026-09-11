@@ -93,6 +93,10 @@ export const router = createBrowserRouter([
         lazy: async () => ({ Component: (await import('../features/explorer/ExplorerPage')).ExplorerPage }),
       },
       {
+        path: 'drive',
+        lazy: async () => ({ Component: (await import('../features/drive/DriveExplorerPage')).DriveExplorerPage }),
+      },
+      {
         path: 'collections/:id',
         lazy: async () => ({ Component: (await import('../features/collections/CollectionPage')).CollectionPage }),
       },
