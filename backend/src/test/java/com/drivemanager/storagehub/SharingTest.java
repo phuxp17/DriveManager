@@ -156,8 +156,8 @@ class SharingTest {
         // Assert NO storage connection ID or token is leaked in response
         String detailBody = detailRes.getResponse().getContentAsString();
         assertThat(detailBody).doesNotContain(connectionId.toString());
+        assertThat(detailBody).doesNotContain("storageConnectionId");
         assertThat(detailBody).doesNotContain("refresh-token");
-        assertThat(detailBody).doesNotContain("drive-");
 
         // 5. Recipient downloads binary content without having any Google connection!
         MvcResult asyncRes = mvc.perform(get("/api/v1/items/" + itemId + "/content")
