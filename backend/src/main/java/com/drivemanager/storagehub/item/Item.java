@@ -72,9 +72,9 @@ public class Item {
     public void markOrganizationChanged() { updatedAt = Instant.now(); }
     void review(boolean reviewed) { reviewedAt = reviewed ? Instant.now() : null; updatedAt = Instant.now(); }
     void archive(boolean archived) { archivedAt = archived ? Instant.now() : null; updatedAt = Instant.now(); }
-    void trash(UUID actor) {
+    public void trash(UUID actor) {
         if (deletedAt == null) { deletedAt = Instant.now(); deletedBy = actor; updatedAt = deletedAt; }
     }
-    void restore() { deletedAt = null; deletedBy = null; updatedAt = Instant.now(); }
+    public void restore() { deletedAt = null; deletedBy = null; updatedAt = Instant.now(); }
     public enum Type { FILE, IMAGE, VIDEO, DOCUMENT, AUDIO, ARCHIVE, LINK, NOTE }
 }
