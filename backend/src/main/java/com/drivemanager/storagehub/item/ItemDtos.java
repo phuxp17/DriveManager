@@ -1,5 +1,6 @@
 package com.drivemanager.storagehub.item;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.*;
 import java.time.Instant;
 import java.util.UUID;
@@ -17,7 +18,8 @@ public final class ItemDtos {
                                String url, String domain, Instant createdAt, Instant updatedAt, long version,
                                Instant reviewedAt, Instant archivedAt, Instant deletedAt,
                                String originalFilename, String mimeType, Long sizeBytes,
-                               String storageFileId, String driveUrl, UUID storageConnectionId) {
+                               String storageFileId, String driveUrl,
+                               @JsonInclude(JsonInclude.Include.NON_NULL) UUID storageConnectionId) {
         public ItemResponse(UUID id, UUID ownerId, Item.Type type, String name, String description,
                             String url, String domain, Instant createdAt, Instant updatedAt, long version,
                             Instant reviewedAt, Instant archivedAt, Instant deletedAt) {
