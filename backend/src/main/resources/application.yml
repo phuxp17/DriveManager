@@ -30,9 +30,12 @@ server:
     session:
       timeout: 30m
       cookie:
+        name: ${SESSION_COOKIE_NAME:SESSION}
+        domain: ${SESSION_COOKIE_DOMAIN:}
+        path: ${SESSION_COOKIE_PATH:/}
         http-only: true
         secure: ${SESSION_COOKIE_SECURE:true}
-        same-site: lax
+        same-site: ${SESSION_COOKIE_SAME_SITE:lax}
   error:
     include-message: never
     include-stacktrace: never

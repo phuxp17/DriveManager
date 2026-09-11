@@ -23,7 +23,7 @@ public class ItemController {
     ItemViewsService.Page list(Principal principal, @RequestParam(defaultValue = "active") String view,
                               @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "50") int size,
                               @RequestParam(required = false) String q, @RequestParam(required = false) String type,
-                              @RequestParam(required = false) java.util.List<UUID> tags,
+                              @RequestParam(required = false) java.util.List<String> tags,
                               @RequestParam(required = false) UUID collectionId,
                               @RequestParam(required = false) Boolean favorite,
                               @RequestParam(required = false) java.time.Instant createdFrom,

@@ -20,6 +20,8 @@ import { Button } from '../../components/common/Button';
 import { EmptyState } from '../../components/common/EmptyState';
 import { Skeleton } from '../../components/common/Skeleton';
 import { ItemTypeIcon } from '../../components/items/ItemTypeIcon';
+import { toast } from '../../components/common/Toast';
+import { confirm } from '../../components/common/ConfirmDialog';
 import { formatDate } from '../../utils/dateUtils';
 
 export const SharesPage: React.FC = () => {
@@ -60,20 +62,29 @@ export const SharesPage: React.FC = () => {
 
   const acceptMutation = useMutation({
     mutationFn: (id: string) => sharesApi.accept(id),
-    onSuccess: invalidateShares,
-    onError: (err: any) => alert(err?.message || 'Không thể chấp nhận chia sẻ.'),
+    onSuccess: () => {
+      invalidateShares();
+      toast.success('Đã chấp nhận chia sẻ thành công.');
+    },
+    onError: (err: any) => toast.error(err?.message || 'Không thể chấp nhận chia sẻ.'),
   });
 
   const rejectMutation = useMutation({
     mutationFn: (id: string) => sharesApi.reject(id),
-    onSuccess: invalidateShares,
-    onError: (err: any) => alert(err?.message || 'Không thể từ chối chia sẻ.'),
+    onSuccess: () => {
+      invalidateShares();
+      toast.success('Đã từ chối chia sẻ.');
+    },
+    onError: (err: any) => toast.error(err?.message || 'Không thể từ chối chia sẻ.'),
   });
 
   const revokeMutation = useMutation({
     mutationFn: (id: string) => sharesApi.revokeOrLeave(id),
-    onSuccess: invalidateShares,
-    onError: (err: any) => alert(err?.message || 'Không thể thực hiện thao tác.'),
+    onSuccess: () => {
+      invalidateShares();
+      toast.success('Đã hủy liên kết chia sẻ.');
+    },
+    onError: (err: any) => toast.error(err?.message || 'Không thể thực hiện thao tác.'),
   });
 
   const handleAccept = (id: string) => {
@@ -84,11 +95,18 @@ export const SharesPage: React.FC = () => {
     rejectMutation.mutate(id);
   };
 
-  const handleRevokeOrLeave = (id: string, isIncoming: boolean) => {
+  const handleRevokeOrLeave = async (id: string, isIncoming: boolean) => {
+    const title = isIncoming ? 'Rời khỏi mục chia sẻ' : 'Thu hồi quyền truy cập';
     const msg = isIncoming
-      ? 'Bạn có chắc muốn rời khỏi mục chia sẻ này?'
-      : 'Bạn có chắc muốn thu hồi quyền truy cập của người nhận này?';
-    if (window.confirm(msg)) {
+      ? 'Bạn có chắc muốn rời khỏi mục chia sẻ này? Bạn sẽ không còn quyền truy cập nội dung nữa.'
+      : 'Bạn có chắc muốn thu hồi quyền truy cập của người nhận này? Người nhận sẽ không còn thấy mục này nữa.';
+    const ok = await confirm({
+      title,
+      message: msg,
+      confirmText: isIncoming ? 'Rời khỏi' : 'Thu hồi',
+      variant: 'warning',
+    });
+    if (ok) {
       revokeMutation.mutate(id);
     }
   };

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertCircle, CheckCircle2, Cloud, Loader2 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
@@ -14,6 +14,7 @@ export const OAuthCallbackPage: React.FC = () => {
   const codeParam = searchParams.get('code');
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
+  const callbackExecutedRef = useRef(false);
 
   useEffect(() => {
     if (errorParam) {
@@ -31,6 +32,9 @@ export const OAuthCallbackPage: React.FC = () => {
       setMessage('Phản hồi OAuth thiếu mã xác thực hoặc trạng thái bảo mật. Vui lòng kết nối lại.');
       return;
     }
+
+    if (callbackExecutedRef.current) return;
+    callbackExecutedRef.current = true;
 
     const controller = new AbortController();
     connectionsApi.completeGoogleCallback(stateParam, codeParam, controller.signal)

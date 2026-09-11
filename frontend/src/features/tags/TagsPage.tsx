@@ -11,6 +11,8 @@ import { Skeleton } from '../../components/common/Skeleton';
 import { TagBadge } from '../../components/tags/TagBadge';
 import { TagMergeModal } from '../../components/tags/TagMergeModal';
 import { TagModal } from '../../components/tags/TagModal';
+import { toast } from '../../components/common/Toast';
+import { confirm } from '../../components/common/ConfirmDialog';
 
 export const TagsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -40,16 +42,21 @@ export const TagsPage: React.FC = () => {
 
   const deleteMutation = useMutation({
     mutationFn: (tagId: string) => tagsApi.delete(tagId),
-    onSuccess: invalidateTags,
-    onError: (err: any) => alert(err?.message || 'Không thể xóa thẻ.'),
+    onSuccess: () => {
+      invalidateTags();
+      toast.success('Đã xóa thẻ thành công.');
+    },
+    onError: (err: any) => toast.error(err?.message || 'Không thể xóa thẻ.'),
   });
 
-  const handleDelete = (tag: Tag) => {
-    if (
-      window.confirm(
-        `Bạn có chắc muốn xóa thẻ "${tag.name}"? Các mục được gán thẻ này sẽ không bị xóa.`
-      )
-    ) {
+  const handleDelete = async (tag: Tag) => {
+    const ok = await confirm({
+      title: 'Xóa thẻ',
+      message: `Bạn có chắc muốn xóa thẻ "${tag.name}"? Các mục được gán thẻ này sẽ không bị xóa.`,
+      confirmText: 'Xóa thẻ',
+      variant: 'danger',
+    });
+    if (ok) {
       deleteMutation.mutate(tag.id);
     }
   };

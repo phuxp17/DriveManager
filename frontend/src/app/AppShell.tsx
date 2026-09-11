@@ -33,6 +33,8 @@ import {
 import { collectionsApi } from '../api/collectionsApi';
 import { Collection } from '../api/types';
 import { CollectionModal } from '../components/collections/CollectionModal';
+import { toast } from '../components/common/Toast';
+import { confirm } from '../components/common/ConfirmDialog';
 import { CollectionTree } from '../components/collections/CollectionTree';
 import { Button } from '../components/common/Button';
 import { DropdownMenu } from '../components/common/DropdownMenu';
@@ -183,15 +185,22 @@ export const AppShell: React.FC = () => {
   };
 
   const handleDeleteCollection = async (col: Collection) => {
-    if (window.confirm(`Bạn có chắc muốn xóa bộ sưu tập "${col.name}"? Các mục con sẽ được giữ lại.`)) {
+    const ok = await confirm({
+      title: 'Xóa bộ sưu tập',
+      message: `Bạn có chắc muốn xóa bộ sưu tập "${col.name}"? Các mục con sẽ được giữ lại.`,
+      confirmText: 'Xóa bộ sưu tập',
+      variant: 'danger',
+    });
+    if (ok) {
       try {
         await collectionsApi.delete(col.id);
         setCollectionRefreshKey((prev) => prev + 1);
+        toast.success(`Đã xóa bộ sưu tập "${col.name}".`);
         if (location.pathname === `/app/collections/${col.id}`) {
           navigate('/app/library');
         }
       } catch (err: any) {
-        alert(err?.message || 'Không thể xóa bộ sưu tập.');
+        toast.error(err?.message || 'Không thể xóa bộ sưu tập.');
       }
     }
   };

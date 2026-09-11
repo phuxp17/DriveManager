@@ -9,6 +9,8 @@ import { EmptyState } from '../../components/common/EmptyState';
 import { Input } from '../../components/common/Input';
 import { Modal } from '../../components/common/Modal';
 import { Skeleton } from '../../components/common/Skeleton';
+import { toast } from '../../components/common/Toast';
+import { confirm } from '../../components/common/ConfirmDialog';
 
 export const ContactsPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -50,8 +52,11 @@ export const ContactsPage: React.FC = () => {
 
   const deleteMutation = useMutation({
     mutationFn: (contactUserId: string) => contactsApi.remove(contactUserId),
-    onSuccess: invalidateContacts,
-    onError: (err: any) => alert(err?.message || 'Không thể xóa liên hệ.'),
+    onSuccess: () => {
+      invalidateContacts();
+      toast.success('Đã xóa liên hệ thành công.');
+    },
+    onError: (err: any) => toast.error(err?.message || 'Không thể xóa liên hệ.'),
   });
 
   const handleAddSubmit = (e: React.FormEvent) => {
@@ -67,12 +72,15 @@ export const ContactsPage: React.FC = () => {
     });
   };
 
-  const handleDelete = (contact: ContactResponse) => {
-    if (
-      window.confirm(
-        `Xác nhận xóa liên hệ "${contact.alias || contact.displayName || contact.email}" khỏi danh bạ?`
-      )
-    ) {
+  const handleDelete = async (contact: ContactResponse) => {
+    const contactName = contact.alias || contact.displayName || contact.email;
+    const ok = await confirm({
+      title: 'Xóa liên hệ',
+      message: `Xác nhận xóa liên hệ "${contactName}" khỏi danh bạ của bạn?`,
+      confirmText: 'Xóa liên hệ',
+      variant: 'danger',
+    });
+    if (ok) {
       deleteMutation.mutate(contact.contactUserId);
     }
   };

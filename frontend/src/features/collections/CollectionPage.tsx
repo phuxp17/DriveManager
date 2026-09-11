@@ -27,6 +27,8 @@ import { ItemDetailDrawer } from '../../components/items/ItemDetailDrawer';
 import { ItemTableRow } from '../../components/items/ItemTableRow';
 import { MembershipDialog } from '../../components/items/MembershipDialog';
 import { ShareModal } from '../../components/shares/ShareModal';
+import { toast } from '../../components/common/Toast';
+import { confirm } from '../../components/common/ConfirmDialog';
 import { useAuth } from '../../context/AuthContext';
 
 export const CollectionPage: React.FC = () => {
@@ -97,18 +99,21 @@ export const CollectionPage: React.FC = () => {
     mutationFn: (colId: string) => collectionsApi.delete(colId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['collections'] });
+      toast.success('Đã xóa bộ sưu tập thành công.');
       navigate('/app/library');
     },
-    onError: (err: any) => alert(err?.message || 'Không thể xóa bộ sưu tập.'),
+    onError: (err: any) => toast.error(err?.message || 'Không thể xóa bộ sưu tập.'),
   });
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!collection) return;
-    if (
-      window.confirm(
-        `Xác nhận xóa bộ sưu tập "${collection.name}"? Các mục thuộc bộ sưu tập này vẫn được giữ nguyên và con trực tiếp sẽ được chuyển lên cấp trên.`
-      )
-    ) {
+    const ok = await confirm({
+      title: 'Xóa bộ sưu tập',
+      message: `Xác nhận xóa bộ sưu tập "${collection.name}"? Các mục thuộc bộ sưu tập này vẫn được giữ nguyên và con trực tiếp sẽ được chuyển lên cấp trên.`,
+      confirmText: 'Xóa bộ sưu tập',
+      variant: 'danger',
+    });
+    if (ok) {
       deleteCollectionMutation.mutate(collection.id);
     }
   };
@@ -145,39 +150,48 @@ export const CollectionPage: React.FC = () => {
     mutationFn: ({ id, isFavorited }: { id: string; isFavorited: boolean }) =>
       isFavorited ? lifecycleApi.unfavorite(id) : lifecycleApi.favorite(id),
     onSuccess: refreshAll,
-    onError: (err: any) => alert(err?.message || 'Lỗi cập nhật yêu thích'),
+    onError: (err: any) => toast.error(err?.message || 'Lỗi cập nhật yêu thích'),
   });
 
   const reviewMutation = useMutation({
     mutationFn: ({ id, isReviewed }: { id: string; isReviewed: boolean }) =>
       isReviewed ? lifecycleApi.inbox(id) : lifecycleApi.review(id),
     onSuccess: refreshAll,
-    onError: (err: any) => alert(err?.message || 'Lỗi cập nhật trạng thái xem xét'),
+    onError: (err: any) => toast.error(err?.message || 'Lỗi cập nhật trạng thái xem xét'),
   });
 
   const archiveMutation = useMutation({
     mutationFn: ({ id, isArchived }: { id: string; isArchived: boolean }) =>
       isArchived ? lifecycleApi.unarchive(id) : lifecycleApi.archive(id),
     onSuccess: refreshAll,
-    onError: (err: any) => alert(err?.message || 'Lỗi cập nhật trạng thái lưu trữ'),
+    onError: (err: any) => toast.error(err?.message || 'Lỗi cập nhật trạng thái lưu trữ'),
   });
 
   const trashMutation = useMutation({
     mutationFn: (itemId: string) => lifecycleApi.trash(itemId),
-    onSuccess: refreshAll,
-    onError: (err: any) => alert(err?.message || 'Lỗi chuyển vào thùng rác'),
+    onSuccess: () => {
+      refreshAll();
+      toast.success('Đã chuyển mục vào thùng rác.');
+    },
+    onError: (err: any) => toast.error(err?.message || 'Lỗi chuyển vào thùng rác'),
   });
 
   const restoreMutation = useMutation({
     mutationFn: (itemId: string) => lifecycleApi.restore(itemId),
-    onSuccess: refreshAll,
-    onError: (err: any) => alert(err?.message || 'Lỗi khôi phục mục'),
+    onSuccess: () => {
+      refreshAll();
+      toast.success('Đã khôi phục mục thành công.');
+    },
+    onError: (err: any) => toast.error(err?.message || 'Lỗi khôi phục mục'),
   });
 
   const purgeMutation = useMutation({
     mutationFn: (itemId: string) => lifecycleApi.purge(itemId),
-    onSuccess: refreshAll,
-    onError: (err: any) => alert(err?.message || 'Lỗi xóa vĩnh viễn mục'),
+    onSuccess: () => {
+      refreshAll();
+      toast.success('Đã xóa vĩnh viễn mục.');
+    },
+    onError: (err: any) => toast.error(err?.message || 'Lỗi xóa vĩnh viễn mục'),
   });
 
   const handleToggleFavorite = (item: ItemEntry) => {
@@ -192,18 +206,38 @@ export const CollectionPage: React.FC = () => {
     archiveMutation.mutate({ id: item.id, isArchived: !!item.archivedAt });
   };
 
-  const handleTrash = (item: ItemEntry) => {
-    trashMutation.mutate(item.id);
+  const handleTrash = async (item: ItemEntry) => {
+    const ok = await confirm({
+      title: 'Chuyển vào thùng rác',
+      message: `Bạn có chắc muốn chuyển mục "${item.name}" vào thùng rác?`,
+      confirmText: 'Chuyển vào thùng rác',
+      variant: 'warning',
+    });
+    if (ok) {
+      trashMutation.mutate(item.id);
+    }
   };
 
-  const handleRestore = (item: ItemEntry) => {
-    if (window.confirm(`Xác nhận khôi phục mục "${item.name}"?`)) {
+  const handleRestore = async (item: ItemEntry) => {
+    const ok = await confirm({
+      title: 'Khôi phục mục',
+      message: `Xác nhận khôi phục mục "${item.name}"?`,
+      confirmText: 'Khôi phục',
+      variant: 'primary',
+    });
+    if (ok) {
       restoreMutation.mutate(item.id);
     }
   };
 
-  const handlePurge = (item: ItemEntry) => {
-    if (window.confirm(`Xác nhận xóa VĨNH VIỄN mục "${item.name}"?`)) {
+  const handlePurge = async (item: ItemEntry) => {
+    const ok = await confirm({
+      title: 'Xóa vĩnh viễn mục',
+      message: `Xác nhận xóa VĨNH VIỄN mục "${item.name}"? Thao tác này sẽ xóa toàn bộ dữ liệu liên quan và không thể khôi phục.`,
+      confirmText: 'Xóa vĩnh viễn',
+      variant: 'danger',
+    });
+    if (ok) {
       purgeMutation.mutate(item.id);
     }
   };

@@ -16,6 +16,8 @@ import { Alert } from '../../components/common/Alert';
 import { Button } from '../../components/common/Button';
 import { EmptyState } from '../../components/common/EmptyState';
 import { Skeleton } from '../../components/common/Skeleton';
+import { toast } from '../../components/common/Toast';
+import { confirm } from '../../components/common/ConfirmDialog';
 
 export const ConnectionsPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -37,9 +39,10 @@ export const ConnectionsPage: React.FC = () => {
     mutationFn: (connId: string) => connectionsApi.disconnect(connId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['connections'] });
+      toast.success('Đã ngắt kết nối tài khoản thành công.');
     },
     onError: (err: any) => {
-      alert(err?.message || 'Không thể ngắt kết nối tài khoản.');
+      toast.error(err?.message || 'Không thể ngắt kết nối tài khoản.');
     },
   });
 
@@ -71,12 +74,14 @@ export const ConnectionsPage: React.FC = () => {
     }
   };
 
-  const handleDisconnect = (conn: StorageConnection) => {
-    if (
-      window.confirm(
-        `Xác nhận ngắt kết nối tài khoản "${conn.displayName}"? Lưu ý: Việc ngắt kết nối không xóa các tệp tin hoặc metadata đã lưu trong hệ thống.`
-      )
-    ) {
+  const handleDisconnect = async (conn: StorageConnection) => {
+    const ok = await confirm({
+      title: 'Ngắt kết nối tài khoản',
+      message: `Xác nhận ngắt kết nối tài khoản "${conn.displayName}"? Lưu ý: Việc ngắt kết nối không xóa các tệp tin hoặc metadata đã lưu trong hệ thống.`,
+      confirmText: 'Ngắt kết nối',
+      variant: 'warning',
+    });
+    if (ok) {
       disconnectMutation.mutate(conn.id);
     }
   };

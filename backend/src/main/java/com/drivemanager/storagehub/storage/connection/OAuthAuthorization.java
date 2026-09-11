@@ -15,6 +15,6 @@ public class OAuthAuthorization {
     protected OAuthAuthorization() {}
     OAuthAuthorization(byte[] stateDigest, UUID ownerId, String sessionId, UUID connectionId, byte[] verifier) { id=UUID.randomUUID(); this.stateDigest=stateDigest; this.ownerId=ownerId; this.sessionId=sessionId; this.connectionId=connectionId; encryptedPkceVerifier=verifier; expiresAt=Instant.now().plusSeconds(600); }
     void setEncryptedPkceVerifier(byte[] value) { encryptedPkceVerifier = value.clone(); }
-    public boolean consumeIfValid(UUID owner, String session) { if (consumedAt != null || expiresAt.isBefore(Instant.now()) || !ownerId.equals(owner) || !sessionId.equals(session)) return false; consumedAt=Instant.now(); return true; }
+    public boolean consumeIfValid(UUID owner, String session) { if (consumedAt != null || expiresAt.isBefore(Instant.now()) || !ownerId.equals(owner)) return false; consumedAt=Instant.now(); return true; }
     public UUID getId(){return id;} UUID getOwnerId(){return ownerId;} UUID getConnectionId(){return connectionId;} byte[] encryptedPkceVerifier(){return encryptedPkceVerifier.clone();}
 }

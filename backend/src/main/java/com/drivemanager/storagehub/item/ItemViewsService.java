@@ -3,12 +3,16 @@ package com.drivemanager.storagehub.item;
 import com.drivemanager.storagehub.auth.AuthService;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.Normalizer;
 import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +23,7 @@ public class ItemViewsService {
                         Instant createdAt, Instant updatedAt, long version, Instant reviewedAt, Instant archivedAt,
                         Instant deletedAt, Instant favoritedAt, Instant lastOpenedAt) {}
     public record Page(List<Entry> content, int page, int size, long totalElements, long totalPages) {}
-    public record Filters(String q, String type, List<UUID> tags, UUID collectionId,
+    public record Filters(String q, String type, List<String> tags, UUID collectionId,
                           Boolean favorite, Instant createdFrom, Instant createdBefore, String sort) {}
     private final NamedParameterJdbcTemplate jdbc;
     private final AuthService auth;
@@ -29,8 +33,45 @@ public class ItemViewsService {
     public Page list(String principal, String view, int page, int size, Filters search) {
         if (page < 0 || page > 100000 || size < 1 || size > 100) throw new IllegalArgumentException("Invalid pagination");
         if (search.q() != null && search.q().length() > 200) throw new IllegalArgumentException("Search too long");
-        Set<UUID> selectedTags = search.tags() == null ? Set.of() : Set.copyOf(search.tags());
-        if (selectedTags.size() > 20) throw new IllegalArgumentException("Too many tags");
+        UUID currentUserId = auth.currentUser(principal).id();
+        Set<UUID> selectedTags = Set.of();
+        if (search.tags() != null && !search.tags().isEmpty()) {
+            List<String> cleaned = new ArrayList<>();
+            for (String t : search.tags()) {
+                if (t == null) continue;
+                String clean = Normalizer.normalize(t.strip(), Normalizer.Form.NFC);
+                if (clean.isBlank()) continue;
+                if (clean.length() > 64) throw new IllegalArgumentException("Tag filter too long");
+                cleaned.add(clean);
+            }
+            Set<String> distinctTags = new HashSet<>(cleaned);
+            if (distinctTags.size() > 20) throw new IllegalArgumentException("Too many tags");
+
+            if (!distinctTags.isEmpty()) {
+                List<Map<String, Object>> existingTags = jdbc.queryForList(
+                        "SELECT id, name, normalized_name FROM tags WHERE owner_id = :owner",
+                        Map.of("owner", currentUserId));
+
+                Set<UUID> resolved = new HashSet<>();
+                for (String rawTag : distinctTags) {
+                    UUID matched = null;
+                    String norm = rawTag.toLowerCase(Locale.ROOT);
+                    for (Map<String, Object> row : existingTags) {
+                        UUID rowId = (UUID) row.get("id");
+                        String rowName = (String) row.get("name");
+                        String rowNorm = (String) row.get("normalized_name");
+                        if (rawTag.equalsIgnoreCase(rowId.toString())
+                                || rawTag.equals(rowName)
+                                || (rowNorm != null && rowNorm.equalsIgnoreCase(norm))) {
+                            matched = rowId;
+                            break;
+                        }
+                    }
+                    resolved.add(matched != null ? matched : UUID.randomUUID());
+                }
+                selectedTags = resolved;
+            }
+        }
         if (search.type() != null && !Set.of("FILE", "IMAGE", "VIDEO", "DOCUMENT", "AUDIO", "ARCHIVE", "LINK", "NOTE").contains(search.type()))
             throw new IllegalArgumentException("Invalid item type");
         if (search.createdFrom() != null && search.createdBefore() != null
@@ -67,7 +108,7 @@ public class ItemViewsService {
             default -> throw new IllegalArgumentException("Invalid sort");
         };
         Map<String, Object> params = new HashMap<>();
-        params.put("owner", auth.currentUser(principal).id());
+        params.put("owner", currentUserId);
         params.put("limit", size);
         params.put("offset", (long) page * size);
         if (search.q() != null && !search.q().isBlank()) {

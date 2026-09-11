@@ -33,6 +33,8 @@ import { ItemDetailDrawer } from '../../components/items/ItemDetailDrawer';
 import { ItemTableRow } from '../../components/items/ItemTableRow';
 import { MembershipDialog } from '../../components/items/MembershipDialog';
 import { ShareModal } from '../../components/shares/ShareModal';
+import { toast } from '../../components/common/Toast';
+import { confirm } from '../../components/common/ConfirmDialog';
 import { useAuth } from '../../context/AuthContext';
 
 export const ExplorerPage: React.FC = () => {
@@ -103,39 +105,48 @@ export const ExplorerPage: React.FC = () => {
     mutationFn: ({ id, isFavorited }: { id: string; isFavorited: boolean }) =>
       isFavorited ? lifecycleApi.unfavorite(id) : lifecycleApi.favorite(id),
     onSuccess: invalidateItems,
-    onError: (err: any) => alert(err?.message || 'Không thể cập nhật yêu thích.'),
+    onError: (err: any) => toast.error(err?.message || 'Không thể cập nhật yêu thích.'),
   });
 
   const reviewMutation = useMutation({
     mutationFn: ({ id, isReviewed }: { id: string; isReviewed: boolean }) =>
       isReviewed ? lifecycleApi.inbox(id) : lifecycleApi.review(id),
     onSuccess: invalidateItems,
-    onError: (err: any) => alert(err?.message || 'Không thể cập nhật trạng thái xem xét.'),
+    onError: (err: any) => toast.error(err?.message || 'Không thể cập nhật trạng thái xem xét.'),
   });
 
   const archiveMutation = useMutation({
     mutationFn: ({ id, isArchived }: { id: string; isArchived: boolean }) =>
       isArchived ? lifecycleApi.unarchive(id) : lifecycleApi.archive(id),
     onSuccess: invalidateItems,
-    onError: (err: any) => alert(err?.message || 'Không thể cập nhật trạng thái lưu trữ.'),
+    onError: (err: any) => toast.error(err?.message || 'Không thể cập nhật trạng thái lưu trữ.'),
   });
 
   const trashMutation = useMutation({
     mutationFn: (id: string) => lifecycleApi.trash(id),
-    onSuccess: invalidateItems,
-    onError: (err: any) => alert(err?.message || 'Không thể chuyển vào thùng rác.'),
+    onSuccess: () => {
+      invalidateItems();
+      toast.success('Đã chuyển mục vào thùng rác.');
+    },
+    onError: (err: any) => toast.error(err?.message || 'Không thể chuyển vào thùng rác.'),
   });
 
   const restoreMutation = useMutation({
     mutationFn: (id: string) => lifecycleApi.restore(id),
-    onSuccess: invalidateItems,
-    onError: (err: any) => alert(err?.message || 'Không thể khôi phục mục.'),
+    onSuccess: () => {
+      invalidateItems();
+      toast.success('Đã khôi phục mục thành công.');
+    },
+    onError: (err: any) => toast.error(err?.message || 'Không thể khôi phục mục.'),
   });
 
   const purgeMutation = useMutation({
     mutationFn: (id: string) => lifecycleApi.purge(id),
-    onSuccess: invalidateItems,
-    onError: (err: any) => alert(err?.message || 'Không thể xóa vĩnh viễn mục.'),
+    onSuccess: () => {
+      invalidateItems();
+      toast.success('Đã xóa vĩnh viễn mục.');
+    },
+    onError: (err: any) => toast.error(err?.message || 'Không thể xóa vĩnh viễn mục.'),
   });
 
   // URL Helpers
@@ -191,23 +202,39 @@ export const ExplorerPage: React.FC = () => {
     archiveMutation.mutate({ id: item.id, isArchived: !!item.archivedAt });
   };
 
-  const handleTrash = (item: ItemEntry) => {
-    trashMutation.mutate(item.id);
+  const handleTrash = async (item: ItemEntry) => {
+    const ok = await confirm({
+      title: 'Chuyển vào thùng rác',
+      message: `Bạn có chắc muốn chuyển mục "${item.name}" vào thùng rác?`,
+      confirmText: 'Chuyển vào thùng rác',
+      variant: 'warning',
+    });
+    if (ok) {
+      trashMutation.mutate(item.id);
+    }
   };
 
   // Confirmation dialog for restore (MISS-010)
-  const handleRestore = (item: ItemEntry) => {
-    if (window.confirm(`Xác nhận khôi phục mục "${item.name}" về thư viện hoạt động?`)) {
+  const handleRestore = async (item: ItemEntry) => {
+    const ok = await confirm({
+      title: 'Khôi phục mục',
+      message: `Xác nhận khôi phục mục "${item.name}" về thư viện hoạt động?`,
+      confirmText: 'Khôi phục',
+      variant: 'primary',
+    });
+    if (ok) {
       restoreMutation.mutate(item.id);
     }
   };
 
-  const handlePurge = (item: ItemEntry) => {
-    if (
-      window.confirm(
-        `Xác nhận xóa VĨNH VIỄN mục "${item.name}"? Thao tác này sẽ xóa toàn bộ liên kết, tệp và dữ liệu liên quan và không thể khôi phục.`
-      )
-    ) {
+  const handlePurge = async (item: ItemEntry) => {
+    const ok = await confirm({
+      title: 'Xóa vĩnh viễn mục',
+      message: `Xác nhận xóa VĨNH VIỄN mục "${item.name}"? Thao tác này sẽ xóa toàn bộ liên kết, tệp và dữ liệu liên quan và không thể khôi phục.`,
+      confirmText: 'Xóa vĩnh viễn',
+      variant: 'danger',
+    });
+    if (ok) {
       purgeMutation.mutate(item.id);
     }
   };
@@ -315,7 +342,13 @@ export const ExplorerPage: React.FC = () => {
             size="sm"
             icon={<CheckCircle2 size={16} />}
             onClick={async () => {
-              if (window.confirm('Đánh dấu toàn bộ mục trong trang hiện tại là ĐÃ XEM XÉT?')) {
+              const ok = await confirm({
+                title: 'Đánh dấu đã xem xét',
+                message: 'Xác nhận đánh dấu toàn bộ mục trong trang hiện tại là ĐÃ XEM XÉT?',
+                confirmText: 'Đánh dấu tất cả',
+                variant: 'primary',
+              });
+              if (ok) {
                 for (const item of data.content) {
                   if (!item.reviewedAt) {
                     try {
@@ -326,6 +359,7 @@ export const ExplorerPage: React.FC = () => {
                   }
                 }
                 invalidateItems();
+                toast.success('Đã cập nhật trạng thái xem xét cho toàn bộ trang.');
               }
             }}
           >

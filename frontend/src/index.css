@@ -1,4 +1,5 @@
 :root {
+  color-scheme: light;
   --color-bg: #F8FAFC;
   --color-surface: #FFFFFF;
   --color-surface-hover: #F1F5F9;
@@ -55,69 +56,6 @@
 
   --header-height: 60px;
   --sidebar-width: 260px;
-}
-
-/* Dark mode semantic tokens (MISS-007) */
-[data-theme="dark"] {
-  --color-bg: #0F172A;
-  --color-surface: #1E293B;
-  --color-surface-hover: #334155;
-  --color-surface-active: #475569;
-  --color-text: #F8FAFC;
-  --color-text-muted: #94A3B8;
-  --color-text-subtle: #64748B;
-  --color-border: #334155;
-  --color-border-hover: #475569;
-  --color-border-focus: #3B82F6;
-
-  --color-primary: #3B82F6;
-  --color-primary-hover: #60A5FA;
-  --color-primary-active: #2563EB;
-  --color-on-primary: #FFFFFF;
-  --color-primary-subtle: rgba(59, 130, 246, 0.15);
-
-  --color-danger: #EF4444;
-  --color-danger-hover: #F87171;
-  --color-on-danger: #FFFFFF;
-  --color-danger-subtle: rgba(239, 68, 68, 0.15);
-
-  --color-warning: #F59E0B;
-  --color-warning-subtle: rgba(245, 158, 11, 0.15);
-
-  --color-success: #22C55E;
-  --color-success-subtle: rgba(34, 197, 94, 0.15);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --color-bg: #0F172A;
-    --color-surface: #1E293B;
-    --color-surface-hover: #334155;
-    --color-surface-active: #475569;
-    --color-text: #F8FAFC;
-    --color-text-muted: #94A3B8;
-    --color-text-subtle: #64748B;
-    --color-border: #334155;
-    --color-border-hover: #475569;
-    --color-border-focus: #3B82F6;
-
-    --color-primary: #3B82F6;
-    --color-primary-hover: #60A5FA;
-    --color-primary-active: #2563EB;
-    --color-on-primary: #FFFFFF;
-    --color-primary-subtle: rgba(59, 130, 246, 0.15);
-
-    --color-danger: #EF4444;
-    --color-danger-hover: #F87171;
-    --color-on-danger: #FFFFFF;
-    --color-danger-subtle: rgba(239, 68, 68, 0.15);
-
-    --color-warning: #F59E0B;
-    --color-warning-subtle: rgba(245, 158, 11, 0.15);
-
-    --color-success: #22C55E;
-    --color-success-subtle: rgba(34, 197, 94, 0.15);
-  }
 }
 
 *, *::before, *::after {

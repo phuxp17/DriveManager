@@ -68,12 +68,15 @@ class ItemSearchTest {
         assertThat(filtered.get("totalElements").asInt()).isEqualTo(1);
         assertThat(filtered.get("content").get(0).get("id").asText()).isEqualTo(first);
         assertThat(call(user, get("/api/v1/items").param("favorite", "false"), null, 200).get("totalElements").asInt()).isEqualTo(1);
+        assertThat(call(user, get("/api/v1/items").param("tags", "A"), null, 200).get("totalElements").asInt()).isEqualTo(1);
+        assertThat(call(user, get("/api/v1/items").param("tags", "a"), null, 200).get("totalElements").asInt()).isEqualTo(1);
+        assertThat(call(user, get("/api/v1/items").param("tags", "NonExistent"), null, 200).get("totalElements").asInt()).isZero();
         call(user, get("/api/v1/items").param("type", "PDF"), null, 400);
         call(user, get("/api/v1/items").param("sort", "i.id; DROP TABLE items"), null, 400);
         call(user, get("/api/v1/items").param("q", "x".repeat(201)), null, 400);
         call(user, get("/api/v1/items").param("createdFrom", "2100-01-01T00:00:00Z")
                 .param("createdBefore", "2000-01-01T00:00:00Z"), null, 400);
-        call(user, get("/api/v1/items").param("tags", "invalid"), null, 400);
+        call(user, get("/api/v1/items").param("tags", "x".repeat(65)), null, 400);
     }
 
     private Browser browser() throws Exception {
