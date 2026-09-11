@@ -28,9 +28,10 @@ public class ItemController {
                               @RequestParam(required = false) Boolean favorite,
                               @RequestParam(required = false) java.time.Instant createdFrom,
                               @RequestParam(required = false) java.time.Instant createdBefore,
-                              @RequestParam(required = false) String sort) {
+                              @RequestParam(required = false) String sort,
+                              @RequestParam(required = false) UUID connectionId) {
         return views.list(principal.getName(), view, page, size,
-                new ItemViewsService.Filters(q, type, tags, collectionId, favorite, createdFrom, createdBefore, sort));
+                new ItemViewsService.Filters(q, type, tags, collectionId, favorite, createdFrom, createdBefore, sort, connectionId));
     }
     @GetMapping("/{id}")
     ItemResponse get(Principal principal, @PathVariable UUID id) { return items.get(principal.getName(), id); }

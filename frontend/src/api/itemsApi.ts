@@ -28,6 +28,7 @@ export const itemsApi = {
     if (filters.createdFrom) params.set('createdFrom', filters.createdFrom);
     if (filters.createdBefore) params.set('createdBefore', filters.createdBefore);
     if (filters.sort) params.set('sort', filters.sort);
+    if (filters.connectionId) params.set('connectionId', filters.connectionId);
 
     if (filters.tags && filters.tags.length > 0) {
       filters.tags.forEach((tag) => params.append('tags', tag));

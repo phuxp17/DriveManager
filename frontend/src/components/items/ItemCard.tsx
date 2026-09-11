@@ -105,6 +105,15 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, currentUserId, actions
         onClick: () => actions.onTrash!(item),
       });
     }
+
+    if (actions.onPurge && item.type !== 'LINK') {
+      menuItems.push({
+        label: 'Xóa vĩnh viễn khỏi Drive',
+        icon: <Trash2 size={16} />,
+        danger: true,
+        onClick: () => actions.onPurge!(item),
+      });
+    }
   }
 
   if (isOwner && isTrashed) {

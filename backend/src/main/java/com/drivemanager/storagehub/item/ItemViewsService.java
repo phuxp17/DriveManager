@@ -21,10 +21,22 @@ import org.springframework.transaction.annotation.Transactional;
 public class ItemViewsService {
     public record Entry(UUID id, UUID ownerId, String type, String name, String description, String url, String domain,
                         Instant createdAt, Instant updatedAt, long version, Instant reviewedAt, Instant archivedAt,
-                        Instant deletedAt, Instant favoritedAt, Instant lastOpenedAt) {}
+                        Instant deletedAt, Instant favoritedAt, Instant lastOpenedAt, String driveUrl, String storageFileId, UUID storageConnectionId) {
+        public Entry(UUID id, UUID ownerId, String type, String name, String description, String url, String domain,
+                     Instant createdAt, Instant updatedAt, long version, Instant reviewedAt, Instant archivedAt,
+                     Instant deletedAt, Instant favoritedAt, Instant lastOpenedAt) {
+            this(id, ownerId, type, name, description, url, domain, createdAt, updatedAt, version, reviewedAt, archivedAt, deletedAt, favoritedAt, lastOpenedAt, null, null, null);
+        }
+    }
     public record Page(List<Entry> content, int page, int size, long totalElements, long totalPages) {}
     public record Filters(String q, String type, List<String> tags, UUID collectionId,
-                          Boolean favorite, Instant createdFrom, Instant createdBefore, String sort) {}
+                          Boolean favorite, Instant createdFrom, Instant createdBefore, String sort,
+                          UUID connectionId) {
+        public Filters(String q, String type, List<String> tags, UUID collectionId,
+                       Boolean favorite, Instant createdFrom, Instant createdBefore, String sort) {
+            this(q, type, tags, collectionId, favorite, createdFrom, createdBefore, sort, null);
+        }
+    }
     private final NamedParameterJdbcTemplate jdbc;
     private final AuthService auth;
     public ItemViewsService(NamedParameterJdbcTemplate jdbc, AuthService auth) { this.jdbc = jdbc; this.auth = auth; }
@@ -146,6 +158,10 @@ public class ItemViewsService {
             filter += " AND i.created_at<:createdBefore";
             params.put("createdBefore", java.sql.Timestamp.from(search.createdBefore()));
         }
+        if (search.connectionId() != null) {
+            filter += " AND fc.storage_connection_id = :connId";
+            params.put("connId", search.connectionId());
+        }
         // Only server-owned SQL fragments are concatenated; every caller value is bound.
         String from = " FROM items i LEFT JOIN link_contents l ON l.item_id=i.id LEFT JOIN file_contents fc ON fc.item_id=i.id LEFT JOIN user_item_states s "
                 + "ON s.item_id=i.id AND s.user_id=:owner WHERE " + filter;
@@ -153,12 +169,16 @@ public class ItemViewsService {
         List<Entry> rows = jdbc.query("SELECT i.*, "
                 + "COALESCE(l.url, CASE WHEN fc.storage_file_id IS NOT NULL THEN 'https://drive.google.com/file/d/' || fc.storage_file_id || '/view' ELSE NULL END) AS url, "
                 + "COALESCE(l.domain, CASE WHEN fc.storage_file_id IS NOT NULL THEN 'drive.google.com' ELSE NULL END) AS domain, "
-                + "s.favorited_at,s.last_opened_at" + from
+                + "s.favorited_at,s.last_opened_at, "
+                + "CASE WHEN fc.storage_file_id IS NOT NULL THEN 'https://drive.google.com/file/d/' || fc.storage_file_id || '/view' ELSE NULL END AS drive_url, "
+                + "fc.storage_file_id, "
+                + "fc.storage_connection_id" + from
                 + " ORDER BY " + order + " DESC,i.id DESC LIMIT :limit OFFSET :offset", params, (rs, row) -> new Entry(
                 rs.getObject("id", UUID.class), rs.getObject("owner_id", UUID.class), rs.getString("type"),
                 rs.getString("name"), rs.getString("description"), rs.getString("url"), rs.getString("domain"),
                 instant(rs,"created_at"), instant(rs,"updated_at"), rs.getLong("version"), instant(rs,"reviewed_at"),
-                instant(rs,"archived_at"), instant(rs,"deleted_at"), instant(rs,"favorited_at"), instant(rs,"last_opened_at")));
+                instant(rs,"archived_at"), instant(rs,"deleted_at"), instant(rs,"favorited_at"), instant(rs,"last_opened_at"),
+                rs.getString("drive_url"), rs.getString("storage_file_id"), rs.getObject("storage_connection_id", UUID.class)));
         return new Page(rows, page, size, total, (total + size - 1) / size);
     }
     private static Instant instant(ResultSet row, String field) throws SQLException {

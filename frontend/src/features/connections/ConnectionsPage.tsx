@@ -316,6 +316,25 @@ export const ConnectionsPage: React.FC = () => {
         />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div
+            style={{
+              padding: '12px 16px',
+              backgroundColor: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-md)',
+              fontSize: '13px',
+              color: 'var(--color-text-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+            }}
+          >
+            <Cloud size={18} color="var(--color-primary)" style={{ flexShrink: 0 }} />
+            <span>
+              <strong>Quản lý tập trung & Xóa tệp:</strong> Hệ thống đã hỗ trợ đọc toàn bộ tệp và xóa tệp trực tiếp trên Google Drive. Nếu tài khoản của bạn được liên kết trước đây, vui lòng nhấn <strong>"Cấp lại quyền (Re-authorize)"</strong> một lần để cấp đủ quyền quản trị Drive.
+            </span>
+          </div>
+
           {connections.map((conn) => {
             const isActive = conn.status === 'ACTIVE' || conn.status === 'CONNECTED';
             const isSyncingThis = syncingId === conn.id;
@@ -406,9 +425,9 @@ export const ConnectionsPage: React.FC = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => handleReconnect(conn.id)}
-                      title="Cấp lại quyền kết nối nếu token bị hết hạn hoặc cần cập nhật scope"
+                      title="Cấp lại quyền kết nối đầy đủ để đọc tất cả tệp và cho phép xóa tệp trên Google Drive"
                     >
-                      Kết nối lại
+                      Cấp lại quyền
                     </Button>
 
                     <Button

@@ -26,6 +26,7 @@ export interface ItemEntry {
   lastOpenedAt: string | null;
   driveUrl?: string | null;
   storageFileId?: string | null;
+  storageConnectionId?: string | null;
 }
 
 export interface ItemPage {
@@ -55,6 +56,7 @@ export interface ItemDetail {
   sizeBytes: number | null;
   driveUrl?: string | null;
   storageFileId?: string | null;
+  storageConnectionId?: string | null;
 }
 
 export interface CreateLinkRequest {
@@ -220,4 +222,5 @@ export interface LibraryFilters {
   createdFrom?: string;
   createdBefore?: string;
   sort?: 'added' | 'modified';
+  connectionId?: string;
 }

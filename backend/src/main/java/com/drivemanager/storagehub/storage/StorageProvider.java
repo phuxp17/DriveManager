@@ -14,6 +14,8 @@ public interface StorageProvider {
     InputStream downloadStream(String accessToken, String driveFileId, Long startByte, Long endByte);
     StorageQuota getStorageQuota(String accessToken);
     DriveFileList listFiles(String accessToken, String pageToken, int pageSize);
+    default void deleteFile(String accessToken, String driveFileId) {}
+    default void trashFile(String accessToken, String driveFileId, boolean trashed) {}
 
     record FileUploadResult(String driveFileId, String filename, String mimeType, long sizeBytes, String md5Checksum) {}
     record FileMetadata(String driveFileId, String filename, String mimeType, long sizeBytes, String md5Checksum) {}

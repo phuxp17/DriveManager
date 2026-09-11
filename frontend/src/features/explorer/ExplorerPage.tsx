@@ -18,6 +18,7 @@ import {
   Tag as TagIcon,
   Trash2,
 } from 'lucide-react';
+import { connectionsApi } from '../../api/connectionsApi';
 import { itemsApi } from '../../api/itemsApi';
 import { lifecycleApi } from '../../api/lifecycleApi';
 import { tagsApi } from '../../api/tagsApi';
@@ -50,6 +51,7 @@ export const ExplorerPage: React.FC = () => {
   const type = searchParams.get('type') || '';
   const sort = searchParams.get('sort') as 'added' | 'modified' | undefined;
   const tagParam = searchParams.get('tags') || '';
+  const connectionId = searchParams.get('connectionId') || '';
 
   // View preference: 'list' | 'grid'
   const [layoutMode, setLayoutMode] = useState<'list' | 'grid'>(() => {
@@ -74,7 +76,7 @@ export const ExplorerPage: React.FC = () => {
     error: queryError,
     refetch: refetchItems,
   } = useQuery({
-    queryKey: ['items', { view, page, size, q, type, sort, tags: tagParam }],
+    queryKey: ['items', { view, page, size, q, type, sort, tags: tagParam, connectionId }],
     queryFn: ({ signal }) =>
       itemsApi.list(
         {
@@ -85,6 +87,7 @@ export const ExplorerPage: React.FC = () => {
           type: type || undefined,
           sort: sort || undefined,
           tags: tagParam ? [tagParam] : undefined,
+          connectionId: connectionId || undefined,
         },
         signal
       ),
@@ -94,6 +97,12 @@ export const ExplorerPage: React.FC = () => {
   const { data: tagsList } = useQuery({
     queryKey: ['tags'],
     queryFn: () => tagsApi.list(),
+  });
+
+  // TanStack Query: Fetch connections list for filter
+  const { data: connectionsList } = useQuery({
+    queryKey: ['connections'],
+    queryFn: () => connectionsApi.list(),
   });
 
   // Mutations for lifecycle actions
@@ -208,9 +217,12 @@ export const ExplorerPage: React.FC = () => {
   };
 
   const handleTrash = async (item: ItemEntry) => {
+    const isDriveFile = item.type !== 'LINK' && (item.storageFileId || item.driveUrl);
     const ok = await confirm({
       title: 'Chuyển vào thùng rác',
-      message: `Bạn có chắc muốn chuyển mục "${item.name}" vào thùng rác?`,
+      message: isDriveFile
+        ? `Bạn có chắc muốn chuyển tệp "${item.name}" vào thùng rác? Tệp cũng sẽ được chuyển vào thùng rác trên Google Drive.`
+        : `Bạn có chắc muốn chuyển mục "${item.name}" vào thùng rác?`,
       confirmText: 'Chuyển vào thùng rác',
       variant: 'warning',
     });
@@ -233,10 +245,13 @@ export const ExplorerPage: React.FC = () => {
   };
 
   const handlePurge = async (item: ItemEntry) => {
+    const isDriveFile = item.type !== 'LINK' && (item.storageFileId || item.driveUrl);
     const ok = await confirm({
-      title: 'Xóa vĩnh viễn mục',
-      message: `Xác nhận xóa VĨNH VIỄN mục "${item.name}"? Thao tác này sẽ xóa toàn bộ liên kết, tệp và dữ liệu liên quan và không thể khôi phục.`,
-      confirmText: 'Xóa vĩnh viễn',
+      title: isDriveFile ? 'Xóa vĩnh viễn khỏi Google Drive' : 'Xóa vĩnh viễn mục',
+      message: isDriveFile
+        ? `Xác nhận xóa VĨNH VIỄN tệp "${item.name}"? Tệp này sẽ bị xóa hoàn toàn khỏi tài khoản Google Drive và hệ thống, không thể khôi phục.`
+        : `Xác nhận xóa VĨNH VIỄN mục "${item.name}"? Thao tác này sẽ xóa toàn bộ liên kết, tệp và dữ liệu liên quan và không thể khôi phục.`,
+      confirmText: isDriveFile ? 'Xóa vĩnh viễn khỏi Drive' : 'Xóa vĩnh viễn',
       variant: 'danger',
     });
     if (ok) {
@@ -302,7 +317,7 @@ export const ExplorerPage: React.FC = () => {
   };
 
   const currentInfo = viewTitles[view] || viewTitles.active;
-  const hasFilter = !!(type || sort || q || tagParam);
+  const hasFilter = !!(type || sort || q || tagParam || connectionId);
   const errorMessage = queryError ? (queryError as any)?.message || 'Không thể tải danh sách mục.' : null;
 
   return (
@@ -394,6 +409,30 @@ export const ExplorerPage: React.FC = () => {
             <Filter size={14} />
             <span>Lọc:</span>
           </div>
+
+          {/* Storage Connection Filter */}
+          {connectionsList && connectionsList.length > 0 && (
+            <select
+              value={connectionId}
+              onChange={(e) => updateQuery('connectionId', e.target.value || null)}
+              style={{
+                padding: '6px 10px',
+                borderRadius: 'var(--radius-sm)',
+                border: '1px solid var(--color-border)',
+                backgroundColor: 'var(--color-bg)',
+                fontSize: '13px',
+                maxWidth: '200px',
+              }}
+              aria-label="Lọc theo tài khoản lưu trữ"
+            >
+              <option value="">Tất cả tài khoản Drive</option>
+              {connectionsList.map((conn) => (
+                <option key={conn.id} value={conn.id}>
+                  📁 {conn.displayName || 'Google Drive'}
+                </option>
+              ))}
+            </select>
+          )}
 
           {/* Type filter (MISS-005 - Added NOTE) */}
           <select

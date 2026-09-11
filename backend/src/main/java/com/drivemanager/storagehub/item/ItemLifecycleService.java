@@ -1,23 +1,40 @@
 package com.drivemanager.storagehub.item;
 
 import com.drivemanager.storagehub.auth.AuthService;
+import com.drivemanager.storagehub.storage.StorageProvider;
+import com.drivemanager.storagehub.storage.connection.StorageOAuthService;
 import com.drivemanager.storagehub.user.ApplicationUserRepository;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ItemLifecycleService {
+    private static final Logger log = LoggerFactory.getLogger(ItemLifecycleService.class);
+
     private final ItemRepository items;
     private final AuthService auth;
     private final JdbcTemplate jdbc;
     private final ApplicationUserRepository users;
     private final com.drivemanager.storagehub.sharing.SharingService sharing;
+    private final ObjectProvider<StorageProvider> storageProvider;
+    private final StorageOAuthService oauthService;
+    private final FileContentRepository fileContents;
+
     public ItemLifecycleService(ItemRepository items, AuthService auth, JdbcTemplate jdbc,
                                 ApplicationUserRepository users,
-                                com.drivemanager.storagehub.sharing.SharingService sharing) {
+                                com.drivemanager.storagehub.sharing.SharingService sharing,
+                                ObjectProvider<StorageProvider> storageProvider,
+                                StorageOAuthService oauthService,
+                                FileContentRepository fileContents) {
         this.items = items; this.auth = auth; this.jdbc = jdbc; this.users = users; this.sharing = sharing;
+        this.storageProvider = storageProvider;
+        this.oauthService = oauthService;
+        this.fileContents = fileContents;
     }
 
     @Transactional
@@ -28,21 +45,60 @@ public class ItemLifecycleService {
     public void trash(String principal, UUID id) {
         Item item = owned(principal, id, true);
         item.trash(item.getOwnerId());
+        trashOnStorage(principal, id, true);
     }
     @Transactional
     public void restore(String principal, UUID id) {
         Item item = owned(principal, id, true);
         if (item.getDeletedAt() == null) throw new ItemNotFoundException();
         item.restore();
+        trashOnStorage(principal, id, false);
     }
     @Transactional
     public void purge(String principal, UUID id) {
         Item item = owned(principal, id, true);
         if (item.getDeletedAt() == null) throw new ItemNotFoundException();
+        deleteOnStorage(principal, id);
         UUID owner = item.getOwnerId();
         jdbc.update("DELETE FROM item_tags WHERE item_id=? AND owner_id=?", id, owner);
         jdbc.update("DELETE FROM collection_items WHERE item_id=? AND owner_id=?", id, owner);
         items.delete(item);
+    }
+
+    private void trashOnStorage(String principal, UUID id, boolean trashed) {
+        try {
+            fileContents.findById(id).ifPresent(fc -> {
+                StorageProvider provider = storageProvider.getIfAvailable();
+                if (provider != null && provider.isConfigured() && fc.getStorageConnectionId() != null && fc.getStorageFileId() != null) {
+                    try {
+                        String token = oauthService.getFreshAccessToken(principal, fc.getStorageConnectionId());
+                        provider.trashFile(token, fc.getStorageFileId(), trashed);
+                    } catch (Exception ex) {
+                        log.warn("Could not obtain token or update trash on storage provider for item {}: {}", id, ex.getMessage());
+                    }
+                }
+            });
+        } catch (Exception ex) {
+            log.warn("Error during storage trash action for item {}: {}", id, ex.getMessage());
+        }
+    }
+
+    private void deleteOnStorage(String principal, UUID id) {
+        try {
+            fileContents.findById(id).ifPresent(fc -> {
+                StorageProvider provider = storageProvider.getIfAvailable();
+                if (provider != null && provider.isConfigured() && fc.getStorageConnectionId() != null && fc.getStorageFileId() != null) {
+                    try {
+                        String token = oauthService.getFreshAccessToken(principal, fc.getStorageConnectionId());
+                        provider.deleteFile(token, fc.getStorageFileId());
+                    } catch (Exception ex) {
+                        log.warn("Could not obtain token or permanently delete from storage provider for item {}: {}", id, ex.getMessage());
+                    }
+                }
+            });
+        } catch (Exception ex) {
+            log.warn("Error during storage permanent delete action for item {}: {}", id, ex.getMessage());
+        }
     }
 
     @Transactional

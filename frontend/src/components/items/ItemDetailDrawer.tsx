@@ -50,6 +50,7 @@ export const ItemDetailDrawer: React.FC<ItemDetailDrawerProps> = ({
   const [editDescription, setEditDescription] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [conflictError, setConflictError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const fetchDetail = async (id: string) => {
     setIsLoading(true);
@@ -76,10 +77,7 @@ export const ItemDetailDrawer: React.FC<ItemDetailDrawerProps> = ({
     }
   }, [itemId]);
 
-  if (!itemId) return null;
-
   const isOwner = !currentUserId || !item || currentUserId === item.ownerId;
-  const [copied, setCopied] = useState(false);
 
   const getCanonicalDriveUrl = () => {
     if (!item) return null;

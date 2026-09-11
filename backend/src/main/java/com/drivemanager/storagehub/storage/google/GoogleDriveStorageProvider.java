@@ -4,13 +4,19 @@ import com.drivemanager.storagehub.storage.StorageProvider;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.InputStream;
+import java.net.URI;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 
 public class GoogleDriveStorageProvider implements StorageProvider {
+
+    private static final Logger log = LoggerFactory.getLogger(GoogleDriveStorageProvider.class);
 
     private final RestClient restClient;
     private final boolean configured;
@@ -162,13 +168,18 @@ public class GoogleDriveStorageProvider implements StorageProvider {
         }
         try {
             int size = Math.max(1, Math.min(pageSize, 100));
-            String uri = "https://www.googleapis.com/drive/v3/files?pageSize=" + size
-                    + "&fields=nextPageToken,files(id,name,mimeType,size,md5Checksum,webViewLink,trashed)"
-                    + "&q=trashed = false and mimeType != 'application/vnd.google-apps.folder'";
+            UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl("https://www.googleapis.com/drive/v3/files")
+                    .queryParam("pageSize", size)
+                    .queryParam("supportsAllDrives", true)
+                    .queryParam("includeItemsFromAllDrives", true)
+                    .queryParam("fields", "nextPageToken,files(id,name,mimeType,size,md5Checksum,webViewLink,trashed)")
+                    .queryParam("q", "trashed = false and mimeType != 'application/vnd.google-apps.folder'");
 
             if (pageToken != null && !pageToken.isBlank()) {
-                uri += "&pageToken=" + java.net.URLEncoder.encode(pageToken, java.nio.charset.StandardCharsets.UTF_8);
+                builder.queryParam("pageToken", pageToken);
             }
+
+            URI uri = builder.build().toUri();
 
             var response = restClient.get()
                     .uri(uri)
@@ -189,6 +200,50 @@ public class GoogleDriveStorageProvider implements StorageProvider {
             return new DriveFileList(items, response.nextPageToken());
         } catch (Exception ex) {
             throw new IllegalStateException("Error listing files from Google Drive: " + ex.getMessage(), ex);
+        }
+    }
+
+    @Override
+    public void deleteFile(String accessToken, String driveFileId) {
+        if (!configured || driveFileId == null || driveFileId.isBlank()) {
+            return;
+        }
+        try {
+            URI uri = UriComponentsBuilder.fromHttpUrl("https://www.googleapis.com/drive/v3/files/" + driveFileId)
+                    .queryParam("supportsAllDrives", true)
+                    .build().toUri();
+
+            restClient.delete()
+                    .uri(uri)
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                    .retrieve()
+                    .toBodilessEntity();
+            log.info("Successfully deleted file {} permanently from Google Drive", driveFileId);
+        } catch (Exception ex) {
+            log.warn("Could not delete file {} from Google Drive (proceeding anyway): {}", driveFileId, ex.getMessage());
+        }
+    }
+
+    @Override
+    public void trashFile(String accessToken, String driveFileId, boolean trashed) {
+        if (!configured || driveFileId == null || driveFileId.isBlank()) {
+            return;
+        }
+        try {
+            URI uri = UriComponentsBuilder.fromHttpUrl("https://www.googleapis.com/drive/v3/files/" + driveFileId)
+                    .queryParam("supportsAllDrives", true)
+                    .build().toUri();
+
+            restClient.patch()
+                    .uri(uri)
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Map.of("trashed", trashed))
+                    .retrieve()
+                    .toBodilessEntity();
+            log.info("Successfully updated trashed={} for file {} on Google Drive", trashed, driveFileId);
+        } catch (Exception ex) {
+            log.warn("Could not update trashed={} for file {} on Google Drive (proceeding anyway): {}", trashed, driveFileId, ex.getMessage());
         }
     }
 

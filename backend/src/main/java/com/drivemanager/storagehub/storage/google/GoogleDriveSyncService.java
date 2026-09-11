@@ -86,6 +86,8 @@ public class GoogleDriveSyncService {
         int updatedItems = 0;
         int totalScanned = 0;
         String pageToken = null;
+        java.util.Set<String> activeDriveFileIds = new java.util.HashSet<>();
+        boolean scanSucceeded = false;
 
         do {
             StorageProvider.DriveFileList fileList;
@@ -99,18 +101,33 @@ public class GoogleDriveSyncService {
             if (fileList == null || fileList.files() == null) {
                 break;
             }
+            scanSucceeded = true;
 
             for (StorageProvider.DriveFileItem fileItem : fileList.files()) {
+                var existingFc = fileContents.findByStorageConnectionIdAndStorageFileId(connection.getId(), fileItem.id());
                 if (fileItem.trashed()) {
+                    if (existingFc.isPresent()) {
+                        Item existingItem = existingFc.get().getItem();
+                        if (existingItem.getDeletedAt() == null) {
+                            existingItem.trash(connection.getOwnerId());
+                            items.save(existingItem);
+                            updatedItems++;
+                        }
+                    }
                     continue;
                 }
-                totalScanned++;
 
-                var existingFc = fileContents.findByStorageConnectionIdAndStorageFileId(connection.getId(), fileItem.id());
+                totalScanned++;
+                activeDriveFileIds.add(fileItem.id());
+
                 if (existingFc.isPresent()) {
                     FileContent fc = existingFc.get();
                     Item existingItem = fc.getItem();
                     boolean modified = false;
+                    if (existingItem.getDeletedAt() != null) {
+                        existingItem.restore();
+                        modified = true;
+                    }
                     if (fileItem.name() != null && !fileItem.name().equals(existingItem.getName())) {
                         existingItem.updateMetadata(fileItem.name(), existingItem.getDescription());
                         modified = true;
@@ -134,6 +151,21 @@ public class GoogleDriveSyncService {
 
             pageToken = fileList.nextPageToken();
         } while (pageToken != null && !pageToken.isBlank());
+
+        // If the scan succeeded, mark items no longer existing on Google Drive as trashed in our database
+        if (scanSucceeded) {
+            List<FileContent> existingForConnection = fileContents.findByStorageConnectionId(connection.getId());
+            for (FileContent fc : existingForConnection) {
+                if (!activeDriveFileIds.contains(fc.getStorageFileId())) {
+                    Item itm = fc.getItem();
+                    if (itm.getDeletedAt() == null) {
+                        itm.trash(connection.getOwnerId());
+                        items.save(itm);
+                        updatedItems++;
+                    }
+                }
+            }
+        }
 
         connection.markSynced();
         connections.save(connection);
@@ -198,7 +230,9 @@ public class GoogleDriveSyncService {
         if (mimeType.startsWith("video/")) return Item.Type.VIDEO;
         if (mimeType.startsWith("audio/")) return Item.Type.AUDIO;
         if (mimeType.equals("application/pdf") || mimeType.equals("application/msword")
-                || mimeType.contains("officedocument") || mimeType.contains("ms-excel") || mimeType.contains("ms-powerpoint")) return Item.Type.DOCUMENT;
+                || mimeType.contains("officedocument") || mimeType.contains("ms-excel") || mimeType.contains("ms-powerpoint")
+                || mimeType.contains("google-apps.document") || mimeType.contains("google-apps.spreadsheet")
+                || mimeType.contains("google-apps.presentation") || mimeType.contains("google-apps.form")) return Item.Type.DOCUMENT;
         if (mimeType.equals("application/zip") || mimeType.equals("application/x-7z-compressed")
                 || mimeType.equals("application/x-rar-compressed") || mimeType.equals("application/gzip")) return Item.Type.ARCHIVE;
         return Item.Type.FILE;
