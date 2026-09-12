@@ -12,6 +12,8 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.HexFormat;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -37,11 +39,12 @@ public class AuthService implements UserDetailsService {
         this(users, passwordEncoder, emailClient, "phuxp17@gmail.com");
     }
 
+    @Autowired
     public AuthService(
             ApplicationUserRepository users,
             PasswordEncoder passwordEncoder,
             ResendEmailClient emailClient,
-            @org.springframework.beans.factory.annotation.Value("${admin.emails:phuxp17@gmail.com}") String adminEmailsConfig) {
+            @Value("${admin.emails:phuxp17@gmail.com}") String adminEmailsConfig) {
         this.users = users;
         this.passwordEncoder = passwordEncoder;
         this.emailClient = emailClient;

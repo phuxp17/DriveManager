@@ -30,10 +30,16 @@ class StorageHubApplicationTest {
     static final String schema = "test_" + UUID.randomUUID().toString().replace("-", "");
     static final String PASSWORD = "correct-horse-battery";
 
+    static String getEnvOrProp(String name) {
+        String prop = System.getProperty(name);
+        if (prop != null && !prop.isBlank()) return prop;
+        return System.getenv(name);
+    }
+
     @DynamicPropertySource
     static void databaseProperties(DynamicPropertyRegistry registry) {
         registry.add("resend.enabled", () -> false);
-        if (Boolean.parseBoolean(System.getenv("USE_EXTERNAL_TEST_DATABASE"))) {
+        if (Boolean.parseBoolean(getEnvOrProp("USE_EXTERNAL_TEST_DATABASE"))) {
             String url = required("TEST_DATABASE_URL");
             if (url.toLowerCase(Locale.ROOT).contains("currentschema=")) {
                 throw new IllegalArgumentException("Test URL must not override isolated schema");
@@ -53,7 +59,7 @@ class StorageHubApplicationTest {
     }
 
     static String required(String name) {
-        String value = System.getenv(name);
+        String value = getEnvOrProp(name);
         if (value == null || value.isBlank()) throw new IllegalStateException(name + " is required");
         return value;
     }
