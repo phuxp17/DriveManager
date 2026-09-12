@@ -68,4 +68,38 @@ public class ResendEmailClient {
             throw new EmailDeliveryException(exception);
         }
     }
+
+    public void sendAdminOtp(String email, String otpCode) {
+        if (!enabled) {
+            return;
+        }
+        String html = """
+                <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#172033;padding:24px;border:1px solid #e2e8f0;border-radius:12px">
+                  <h2 style="color:#2563eb;margin-bottom:8px">DriveManager - Mã xác thực Admin</h2>
+                  <p>Bạn (hoặc người quản trị) vừa yêu cầu mở khóa truy cập <strong>Admin Dashboard & Monitoring</strong> của hệ thống DriveManager.</p>
+                  <p>Mã bảo mật xác thực (OTP) một lần của bạn là:</p>
+                  <div style="background:#f8fafc;border:2px dashed #94a3b8;border-radius:8px;padding:18px;text-align:center;margin:24px 0">
+                    <span style="font-size:36px;font-weight:700;letter-spacing:8px;color:#0f172a;font-family:monospace">%s</span>
+                  </div>
+                  <p style="color:#64748b;font-size:13px">Mã này có hiệu lực trong 10 phút. Tuyệt đối không chia sẻ mã này cho bất kỳ ai. Nếu bạn không thực hiện yêu cầu này, vui lòng kiểm tra ngay bảo mật tài khoản.</p>
+                </div>
+                """.formatted(otpCode);
+        try {
+            client.post()
+                    .uri("/emails")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .header("Idempotency-Key", "admin-otp/" + System.currentTimeMillis() + "/" + otpCode)
+                    .body(Map.of(
+                            "from", from,
+                            "to", email,
+                            "subject", "[DriveManager] Mã xác thực Admin Dashboard: " + otpCode,
+                            "html", html,
+                            "text", "Mã xác thực Admin Dashboard của bạn: " + otpCode + " (có hiệu lực trong 10 phút)."))
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (RestClientException exception) {
+            throw new EmailDeliveryException(exception);
+        }
+    }
 }
+

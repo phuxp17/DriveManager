@@ -31,7 +31,10 @@ public final class AuthDtos {
         }
     }
 
-    public record UserResponse(UUID id, String email, String displayName) {
+    public record UserResponse(UUID id, String email, String displayName, String role) {
+        public UserResponse(UUID id, String email, String displayName) {
+            this(id, email, displayName, "ROLE_USER");
+        }
     }
 
     public record CsrfResponse(String headerName, String parameterName, String token) {

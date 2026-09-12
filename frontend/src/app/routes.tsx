@@ -77,6 +77,31 @@ export const router = createBrowserRouter([
     },
   },
   {
+    path: '/privacy',
+    lazy: async () => {
+      const { PrivacyPolicyPage } = await import('../features/privacy/PrivacyPolicyPage');
+      return { Component: PrivacyPolicyPage };
+    },
+  },
+  {
+    path: '/policy',
+    lazy: async () => {
+      const { PrivacyPolicyPage } = await import('../features/privacy/PrivacyPolicyPage');
+      return { Component: PrivacyPolicyPage };
+    },
+  },
+  {
+    path: '/terms',
+    lazy: async () => {
+      const { TermsPage } = await import('../features/privacy/TermsPage');
+      return { Component: TermsPage };
+    },
+  },
+  {
+    path: '/admin',
+    element: <Navigate to="/app/admin" replace />,
+  },
+  {
     path: '/app',
     element: (
       <ProtectedRoute>
@@ -87,6 +112,10 @@ export const router = createBrowserRouter([
       {
         index: true,
         lazy: async () => ({ Component: (await import('../features/dashboard/DashboardPage')).DashboardPage }),
+      },
+      {
+        path: 'admin',
+        lazy: async () => ({ Component: (await import('../features/admin/AdminPage')).AdminPage }),
       },
       {
         path: 'library',
@@ -122,6 +151,7 @@ export const router = createBrowserRouter([
       },
     ],
   },
+
   {
     path: '*',
     element: (

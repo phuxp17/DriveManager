@@ -5,6 +5,7 @@ import com.drivemanager.storagehub.auth.AuthDtos.UserResponse;
 import com.drivemanager.storagehub.user.ApplicationUser;
 import com.drivemanager.storagehub.user.ApplicationUserRepository;
 import java.util.Locale;
+import java.util.Set;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -26,12 +27,33 @@ public class AuthService implements UserDetailsService {
     private final ApplicationUserRepository users;
     private final PasswordEncoder passwordEncoder;
     private final ResendEmailClient emailClient;
+    private final Set<String> adminEmails;
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    public AuthService(ApplicationUserRepository users, PasswordEncoder passwordEncoder, ResendEmailClient emailClient) {
+    public AuthService(
+            ApplicationUserRepository users,
+            PasswordEncoder passwordEncoder,
+            ResendEmailClient emailClient) {
+        this(users, passwordEncoder, emailClient, "phuxp17@gmail.com");
+    }
+
+    public AuthService(
+            ApplicationUserRepository users,
+            PasswordEncoder passwordEncoder,
+            ResendEmailClient emailClient,
+            @org.springframework.beans.factory.annotation.Value("${admin.emails:phuxp17@gmail.com}") String adminEmailsConfig) {
         this.users = users;
         this.passwordEncoder = passwordEncoder;
         this.emailClient = emailClient;
+        this.adminEmails = java.util.Arrays.stream(adminEmailsConfig.split(","))
+                .map(String::strip)
+                .map(s -> s.toLowerCase(Locale.ROOT))
+                .filter(s -> !s.isBlank())
+                .collect(java.util.stream.Collectors.toSet());
+    }
+
+    private boolean isAdminEmail(String normalizedEmail) {
+        return adminEmails.contains(normalizedEmail);
     }
 
     @Transactional
@@ -44,12 +66,14 @@ public class AuthService implements UserDetailsService {
 
         try {
             String token = newToken();
+            String initialRole = isAdminEmail(normalizedEmail) ? "ROLE_ADMIN" : "ROLE_USER";
             ApplicationUser user = new ApplicationUser(
                     email,
                     normalizedEmail,
                     passwordEncoder.encode(request.password()),
                     request.displayName().strip(),
-                    !emailClient.isEnabled());
+                    !emailClient.isEnabled(),
+                    initialRole);
             if (emailClient.isEnabled()) {
                 user.startEmailVerification(hash(token), Instant.now().plus(24, ChronoUnit.HOURS));
             }
@@ -64,7 +88,7 @@ public class AuthService implements UserDetailsService {
     @Transactional(readOnly = true)
     public UserResponse currentUser(String normalizedEmail) {
         return users.findByNormalizedEmail(normalizedEmail)
-                .map(AuthService::response)
+                .map(this::response)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 
@@ -90,11 +114,18 @@ public class AuthService implements UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String email) {
-        return users.findByNormalizedEmail(normalizeEmail(email))
-                .map(user -> User.withUsername(user.getNormalizedEmail())
-                        .password(user.getPasswordHash())
-                        .authorities("ROLE_USER")
-                        .build())
+        String normalizedEmail = normalizeEmail(email);
+        return users.findByNormalizedEmail(normalizedEmail)
+                .map(user -> {
+                    String role = user.getRole();
+                    if (isAdminEmail(normalizedEmail)) {
+                        role = "ROLE_ADMIN";
+                    }
+                    return User.withUsername(user.getNormalizedEmail())
+                            .password(user.getPasswordHash())
+                            .authorities(role != null ? role : "ROLE_USER")
+                            .build();
+                })
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 
@@ -117,7 +148,12 @@ public class AuthService implements UserDetailsService {
         }
     }
 
-    private static UserResponse response(ApplicationUser user) {
-        return new UserResponse(user.getId(), user.getEmail(), user.getDisplayName());
+    private UserResponse response(ApplicationUser user) {
+        String role = user.getRole();
+        if (isAdminEmail(user.getNormalizedEmail())) {
+            role = "ROLE_ADMIN";
+        }
+        return new UserResponse(user.getId(), user.getEmail(), user.getDisplayName(), role != null ? role : "ROLE_USER");
     }
 }
+

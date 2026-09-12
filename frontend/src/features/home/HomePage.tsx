@@ -117,7 +117,11 @@ export const HomePage: React.FC = () => {
             <a href="#bao-mat" className={styles.navPill}>
               <ShieldCheck size={14} /> Bảo mật
             </a>
+            <Link to="/privacy" className={styles.navPill}>
+              <FileText size={14} /> Chính sách & Quyền riêng tư
+            </Link>
           </nav>
+
 
           <div className={styles.headerActions}>
             {user ? (
@@ -542,11 +546,28 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* Minimal Footer */}
+      {/* Footer with Compliance Links */}
       <footer className={styles.footer}>
-        <p>© 2026 DriveManager. Tinh gọn • Bảo mật • Đồng bộ tức thì.</p>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+          <p>© 2026 DriveManager (https://drive.vplatform.dev). Tinh gọn • Bảo mật • Đồng bộ tức thì.</p>
+          <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center', fontSize: '13px' }}>
+            <Link to="/privacy" style={{ color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 500 }}>
+              Chính sách Quyền riêng tư (Privacy Policy)
+            </Link>
+            <Link to="/terms" style={{ color: 'var(--color-text-muted)', textDecoration: 'none' }}>
+              Điều khoản Dịch vụ (Terms of Service)
+            </Link>
+            <Link to="/privacy#google-limited-use" style={{ color: 'var(--color-text-muted)', textDecoration: 'none' }}>
+              Google API Limited Use Disclosure
+            </Link>
+            <a href="mailto:phuxp17@gmail.com" style={{ color: 'var(--color-text-muted)', textDecoration: 'none' }}>
+              Liên hệ hỗ trợ: phuxp17@gmail.com
+            </a>
+          </div>
+        </div>
       </footer>
     </div>
   );
 };
+
 export default HomePage;

@@ -125,6 +125,72 @@ export interface UserResponse {
   id: string;
   email: string;
   displayName: string;
+  role?: string;
+}
+
+export interface AdminAuthStatus {
+  isAdmin: boolean;
+  is2faVerified: boolean;
+  adminEmail: string;
+}
+
+export interface TimelinePoint {
+  label: string;
+  count: number;
+  errors: number;
+}
+
+export interface PathCount {
+  path: string;
+  count: number;
+}
+
+export interface SystemHealthInfo {
+  freeMemoryBytes: number;
+  totalMemoryBytes: number;
+  maxMemoryBytes: number;
+  availableProcessors: number;
+  uptimeSeconds: number;
+}
+
+export interface AdminStats {
+  totalVisits: number;
+  visitsToday: number;
+  visitsLast7Days: number;
+  uniqueVisitors: number;
+  uniqueVisitorsToday: number;
+  errorRatePercent: number;
+  averageLatencyMs: number;
+  totalUsers: number;
+  verifiedUsers: number;
+  adminUsers: number;
+  totalConnections: number;
+  totalFiles: number;
+  totalStorageBytes: number;
+  visitsTimeline: TimelinePoint[];
+  topPaths: PathCount[];
+  systemHealth: SystemHealthInfo;
+}
+
+export interface AdminAccessLogEntry {
+  id: string;
+  timestamp: string;
+  path: string;
+  httpMethod: string;
+  statusCode: number;
+  clientIp: string;
+  userAgent: string | null;
+  userEmail: string | null;
+  durationMs: number;
+}
+
+export interface AdminUserEntry {
+  id: string;
+  email: string;
+  displayName: string;
+  role: string;
+  emailVerified: boolean;
+  createdAt: string;
 }
 
 export interface CsrfResponse {

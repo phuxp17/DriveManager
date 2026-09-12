@@ -32,7 +32,8 @@ public class SecurityConfig {
             ApiErrorWriter apiErrorWriter,
             CsrfTokenRepository csrfTokenRepository,
             SecurityContextRepository securityContextRepository,
-            com.drivemanager.storagehub.common.ratelimit.RateLimitFilter rateLimitFilter) throws Exception {
+            com.drivemanager.storagehub.common.ratelimit.RateLimitFilter rateLimitFilter,
+            com.drivemanager.storagehub.admin.filter.AccessLoggingFilter accessLoggingFilter) throws Exception {
         return http
                 .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository))
                 .securityContext(context -> context
@@ -44,6 +45,7 @@ public class SecurityConfig {
                 .logout(logout -> logout.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .addFilterBefore(rateLimitFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(accessLoggingFilter, org.springframework.security.web.access.intercept.AuthorizationFilter.class)
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/actuator/health", "/api/v1/auth/register", "/api/v1/auth/login",
                                 "/api/v1/auth/csrf", "/api/v1/auth/verify").permitAll()
@@ -57,6 +59,15 @@ public class SecurityConfig {
     }
 
     @Bean
+    org.springframework.boot.web.servlet.FilterRegistrationBean<com.drivemanager.storagehub.admin.filter.AccessLoggingFilter> accessLoggingFilterRegistration(
+            com.drivemanager.storagehub.admin.filter.AccessLoggingFilter filter) {
+        org.springframework.boot.web.servlet.FilterRegistrationBean<com.drivemanager.storagehub.admin.filter.AccessLoggingFilter> registration =
+                new org.springframework.boot.web.servlet.FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
+    }
+
+    @Bean
     org.springframework.boot.web.servlet.FilterRegistrationBean<com.drivemanager.storagehub.common.ratelimit.RateLimitFilter> rateLimitFilterRegistration(
             com.drivemanager.storagehub.common.ratelimit.RateLimitFilter filter) {
         org.springframework.boot.web.servlet.FilterRegistrationBean<com.drivemanager.storagehub.common.ratelimit.RateLimitFilter> registration =
@@ -64,6 +75,7 @@ public class SecurityConfig {
         registration.setEnabled(false);
         return registration;
     }
+
 
     @Bean
     CsrfTokenRepository csrfTokenRepository() {

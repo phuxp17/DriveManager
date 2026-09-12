@@ -41,11 +41,19 @@ public class ApplicationUser {
     @Column(name = "email_verification_expires_at")
     private Instant emailVerificationExpiresAt;
 
+    @Column(name = "role", nullable = false, length = 32)
+    private String role = "ROLE_USER";
+
     protected ApplicationUser() {
     }
 
     public ApplicationUser(String email, String normalizedEmail, String passwordHash, String displayName,
                            boolean emailVerified) {
+        this(email, normalizedEmail, passwordHash, displayName, emailVerified, "ROLE_USER");
+    }
+
+    public ApplicationUser(String email, String normalizedEmail, String passwordHash, String displayName,
+                           boolean emailVerified, String role) {
         this.id = UUID.randomUUID();
         this.email = email;
         this.normalizedEmail = normalizedEmail;
@@ -54,6 +62,7 @@ public class ApplicationUser {
         this.createdAt = Instant.now();
         this.updatedAt = this.createdAt;
         this.emailVerifiedAt = emailVerified ? this.createdAt : null;
+        this.role = role != null && !role.isBlank() ? role : "ROLE_USER";
     }
 
     public UUID getId() {
@@ -100,4 +109,24 @@ public class ApplicationUser {
         emailVerificationExpiresAt = expiresAt;
     }
 
+    public String getRole() {
+        return role != null ? role : "ROLE_USER";
+    }
+
+    public void setRole(String role) {
+        this.role = role != null && !role.isBlank() ? role : "ROLE_USER";
+        this.updatedAt = Instant.now();
+    }
+
+    public boolean isAdmin() {
+        return "ROLE_ADMIN".equalsIgnoreCase(this.role);
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
 }

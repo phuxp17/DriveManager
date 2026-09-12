@@ -24,6 +24,7 @@ import {
   Plus,
   Search,
   Share2,
+  ShieldCheck,
   Star,
   Tag,
   Trash2,
@@ -467,8 +468,43 @@ export const AppShell: React.FC = () => {
               <Users size={18} />
               <span>Danh bạ</span>
             </NavLink>
+
+            {user?.role === 'ROLE_ADMIN' && (
+              <NavLink
+                to="/app/admin"
+                className={({ isActive }) =>
+                  `${styles.navItem} ${isActive ? styles.navItemActive : ''}`
+                }
+                style={{
+                  color: 'var(--color-primary)',
+                  fontWeight: 600,
+                  marginTop: '12px',
+                  background: 'rgba(59, 130, 246, 0.08)',
+                  border: '1px solid rgba(59, 130, 246, 0.25)',
+                }}
+                onClick={closeSidebar}
+              >
+                <ShieldCheck size={18} color="var(--color-primary)" />
+                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                  <span>Admin Dashboard</span>
+                  <span
+                    style={{
+                      fontSize: '10px',
+                      background: 'var(--color-primary)',
+                      color: '#ffffff',
+                      padding: '1px 6px',
+                      borderRadius: 'var(--radius-full)',
+                      fontWeight: 700,
+                    }}
+                  >
+                    ADMIN
+                  </span>
+                </span>
+              </NavLink>
+            )}
           </div>
         </div>
+
 
         {/* User Footer */}
         <div className={styles.userFooter}>
