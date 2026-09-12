@@ -19,6 +19,8 @@ interface DriveToolbarProps {
   onSearchChange: (q: string) => void;
   layoutMode: 'list' | 'grid';
   onLayoutChange: (mode: 'list' | 'grid') => void;
+  currentRootView: 'root' | 'sharedWithMe' | 'all';
+  onSelectRootView: (view: 'root' | 'sharedWithMe' | 'all') => void;
   onCreateFolder: () => void;
   onUploadFile: () => void;
   onRefresh: () => void;
@@ -32,6 +34,8 @@ export const DriveToolbar: React.FC<DriveToolbarProps> = ({
   onSearchChange,
   layoutMode,
   onLayoutChange,
+  currentRootView,
+  onSelectRootView,
   onCreateFolder,
   onUploadFile,
   onRefresh,
@@ -41,7 +45,42 @@ export const DriveToolbar: React.FC<DriveToolbarProps> = ({
     <div className={styles.toolbarCard}>
       {/* Top row: Breadcrumb navigation and primary actions */}
       <div className={styles.toolbarTop}>
-        <DriveBreadcrumb items={breadcrumbs} onNavigate={onNavigateBreadcrumb} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+          <DriveBreadcrumb items={breadcrumbs} onNavigate={onNavigateBreadcrumb} />
+
+          {/* Quick Root View selector when at root */}
+          {breadcrumbs.length === 1 && (
+            <div className={styles.viewToggle} style={{ padding: '2px' }}>
+              <button
+                type="button"
+                className={`${styles.toggleBtn} ${currentRootView === 'root' ? styles.toggleBtnActive : ''}`}
+                style={{ width: 'auto', padding: '0 10px', fontSize: '12px', fontWeight: 500 }}
+                onClick={() => onSelectRootView('root')}
+                title="Tệp trong Drive của tôi"
+              >
+                Drive của tôi
+              </button>
+              <button
+                type="button"
+                className={`${styles.toggleBtn} ${currentRootView === 'sharedWithMe' ? styles.toggleBtnActive : ''}`}
+                style={{ width: 'auto', padding: '0 10px', fontSize: '12px', fontWeight: 500 }}
+                onClick={() => onSelectRootView('sharedWithMe')}
+                title="Tệp được người khác chia sẻ với tôi"
+              >
+                Được chia sẻ
+              </button>
+              <button
+                type="button"
+                className={`${styles.toggleBtn} ${currentRootView === 'all' ? styles.toggleBtnActive : ''}`}
+                style={{ width: 'auto', padding: '0 10px', fontSize: '12px', fontWeight: 500 }}
+                onClick={() => onSelectRootView('all')}
+                title="Tất cả tệp tin có thể truy cập"
+              >
+                Tất cả tệp
+              </button>
+            </div>
+          )}
+        </div>
 
         <div className={styles.actionControls}>
           {/* Search box */}

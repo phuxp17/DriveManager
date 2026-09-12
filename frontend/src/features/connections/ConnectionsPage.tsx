@@ -351,12 +351,16 @@ export const ConnectionsPage: React.FC = () => {
                 ? 'var(--color-warning)'
                 : 'var(--color-primary)';
 
+            const isDriveFileOnly = Boolean(
+              conn.grantedScopes && !conn.grantedScopes.includes('https://www.googleapis.com/auth/drive')
+            );
+
             return (
               <div
                 key={conn.id}
                 style={{
                   backgroundColor: 'var(--color-surface)',
-                  border: '1px solid var(--color-border)',
+                  border: isDriveFileOnly ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid var(--color-border)',
                   borderRadius: 'var(--radius-lg)',
                   padding: '20px',
                   display: 'flex',
@@ -389,8 +393,29 @@ export const ConnectionsPage: React.FC = () => {
                       <Cloud size={24} color="var(--color-primary)" />
                     </div>
                     <div>
-                      <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-text)' }}>
-                        {conn.displayName}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-text)' }}>
+                          {conn.displayName}
+                        </span>
+                        {isDriveFileOnly && (
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              padding: '2px 8px',
+                              borderRadius: 'var(--radius-full)',
+                              backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                              color: '#d97706',
+                            }}
+                            title="Tài khoản này chỉ có quyền drive.file, Google ẩn các tệp có sẵn"
+                          >
+                            <AlertTriangle size={12} />
+                            Giới hạn (drive.file)
+                          </span>
+                        )}
                       </div>
                       <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
                         Nhà cung cấp: <strong>{conn.provider}</strong> &bull; Trạng thái:{' '}
@@ -422,12 +447,12 @@ export const ConnectionsPage: React.FC = () => {
                     </Button>
 
                     <Button
-                      variant="ghost"
+                      variant={isDriveFileOnly ? 'primary' : 'ghost'}
                       size="sm"
                       onClick={() => handleReconnect(conn.id)}
                       title="Cấp lại quyền kết nối đầy đủ để đọc tất cả tệp và cho phép xóa tệp trên Google Drive"
                     >
-                      Cấp lại quyền
+                      {isDriveFileOnly ? 'Cấp lại quyền ngay' : 'Cấp lại quyền'}
                     </Button>
 
                     <Button
@@ -441,6 +466,36 @@ export const ConnectionsPage: React.FC = () => {
                     </Button>
                   </div>
                 </div>
+
+                {/* Warning notice if connection only has drive.file */}
+                {isDriveFileOnly && (
+                  <div
+                    style={{
+                      padding: '10px 14px',
+                      backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                      border: '1px solid rgba(245, 158, 11, 0.3)',
+                      borderRadius: 'var(--radius-md)',
+                      fontSize: '13px',
+                      color: 'var(--color-text)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '12px',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <span>
+                      ⚠️ <strong>Tài khoản chưa có quyền đọc toàn bộ Drive:</strong> Do liên kết trước đây với quyền <code>drive.file</code>, Google không cho ứng dụng hiển thị các tệp đã có sẵn trên Drive. Nhấn <strong>"Cấp lại quyền ngay"</strong> để mở khóa toàn bộ tệp tin.
+                    </span>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => handleReconnect(conn.id)}
+                    >
+                      Cấp lại quyền ngay
+                    </Button>
+                  </div>
+                )}
 
                 {/* Quota Progress Bar */}
                 <div

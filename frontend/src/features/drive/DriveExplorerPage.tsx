@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  AlertTriangle,
   Cloud,
   FolderOpen,
   HardDrive,
@@ -45,8 +46,9 @@ export const DriveExplorerPage: React.FC = () => {
     queryFn: () => connectionsApi.list(),
   });
 
-  const googleConnections = connections.filter(
-    (c) => c.provider === 'GOOGLE' && c.status === 'CONNECTED'
+  const googleConnections = useMemo(
+    () => connections.filter((c) => c.provider === 'GOOGLE' && c.status === 'CONNECTED'),
+    [connections]
   );
 
   // Selected Account ID
@@ -57,13 +59,13 @@ export const DriveExplorerPage: React.FC = () => {
     if (googleConnections.length > 0) {
       if (urlAccountId && googleConnections.some((c) => c.id === urlAccountId)) {
         setSelectedAccountId(urlAccountId);
-      } else {
+      } else if (!selectedAccountId || !googleConnections.some((c) => c.id === selectedAccountId)) {
         setSelectedAccountId(googleConnections[0].id);
       }
     } else {
       setSelectedAccountId('');
     }
-  }, [googleConnections, urlAccountId]);
+  }, [googleConnections, urlAccountId, selectedAccountId]);
 
   const handleSelectAccount = (accId: string) => {
     setSelectedAccountId(accId);
@@ -73,6 +75,31 @@ export const DriveExplorerPage: React.FC = () => {
     // Reset path
     setBreadcrumbs([{ id: 'root', name: 'Drive của tôi' }]);
     setSearchQuery('');
+  };
+
+  const activeConnection = googleConnections.find((c) => c.id === selectedAccountId);
+
+  // Detect whether connection was granted with drive.file only (cannot see existing Drive files)
+  const isDriveFileOnly = Boolean(
+    activeConnection?.grantedScopes &&
+    !activeConnection.grantedScopes.includes('https://www.googleapis.com/auth/drive')
+  );
+
+  const [isReconnecting, setIsReconnecting] = useState(false);
+
+  const handleReconnect = async (connId?: string) => {
+    const targetId = connId || selectedAccountId;
+    if (!targetId) return;
+    setIsReconnecting(true);
+    try {
+      const res = await connectionsApi.reconnectGoogle(targetId);
+      if (res.authorizationUrl) {
+        window.location.href = res.authorizationUrl;
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Không thể khởi tạo liên kết cấp lại quyền Google Drive.');
+      setIsReconnecting(false);
+    }
   };
 
   // Layout Preference
@@ -90,6 +117,23 @@ export const DriveExplorerPage: React.FC = () => {
     { id: 'root', name: 'Drive của tôi' },
   ]);
   const currentFolderId = breadcrumbs[breadcrumbs.length - 1]?.id || 'root';
+
+  const currentRootView: 'root' | 'sharedWithMe' | 'all' =
+    breadcrumbs[0]?.id === 'sharedWithMe'
+      ? 'sharedWithMe'
+      : breadcrumbs[0]?.id === 'all'
+      ? 'all'
+      : 'root';
+
+  const handleSelectRootView = (view: 'root' | 'sharedWithMe' | 'all') => {
+    const titles: Record<'root' | 'sharedWithMe' | 'all', string> = {
+      root: 'Drive của tôi',
+      sharedWithMe: 'Được chia sẻ',
+      all: 'Tất cả tệp',
+    };
+    setBreadcrumbs([{ id: view, name: titles[view] }]);
+    setSearchQuery('');
+  };
 
   // Search State
   const [searchQuery, setSearchQuery] = useState('');
@@ -217,8 +261,6 @@ export const DriveExplorerPage: React.FC = () => {
     }
   };
 
-  const activeConnection = googleConnections.find((c) => c.id === selectedAccountId);
-
   const formatQuota = (used?: number | null, total?: number | null) => {
     if (!total || total <= 0) return '';
     const usedGb = ((used || 0) / (1024 * 1024 * 1024)).toFixed(1);
@@ -295,6 +337,44 @@ export const DriveExplorerPage: React.FC = () => {
         )}
       </div>
 
+      {/* Scope Restriction Warning Banner */}
+      {isDriveFileOnly && (
+        <div
+          style={{
+            backgroundColor: 'rgba(245, 158, 11, 0.12)',
+            border: '1px solid rgba(245, 158, 11, 0.35)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '14px 18px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '16px',
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+            <AlertTriangle size={24} color="var(--color-warning)" style={{ flexShrink: 0 }} />
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-text)' }}>
+                Tài khoản đang bị giới hạn quyền truy cập (chỉ đọc tệp do ứng dụng tạo)
+              </div>
+              <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                Tài khoản này được liên kết với quyền giới hạn (<code>drive.file</code>). Google chỉ cho phép hiển thị các tệp do ứng dụng này tải lên và <strong>ẩn toàn bộ các tệp có sẵn</strong> trên Google Drive của bạn. Vui lòng cấp lại quyền để xem toàn bộ tệp và thư mục.
+              </div>
+            </div>
+          </div>
+          <Button
+            variant="primary"
+            size="sm"
+            isLoading={isReconnecting}
+            onClick={() => handleReconnect()}
+            style={{ flexShrink: 0 }}
+          >
+            Cấp lại quyền ngay (Re-authorize)
+          </Button>
+        </div>
+      )}
+
       {/* Toolbar (Breadcrumbs + Actions + Search + View toggle) */}
       <DriveToolbar
         breadcrumbs={breadcrumbs}
@@ -303,6 +383,8 @@ export const DriveExplorerPage: React.FC = () => {
         onSearchChange={setSearchQuery}
         layoutMode={layoutMode}
         onLayoutChange={handleLayoutChange}
+        currentRootView={currentRootView}
+        onSelectRootView={handleSelectRootView}
         onCreateFolder={() => setCreateFolderOpen(true)}
         onUploadFile={() => setUploadModalOpen(true)}
         onRefresh={() => refetchFiles()}
@@ -333,26 +415,52 @@ export const DriveExplorerPage: React.FC = () => {
         )
       ) : allFiles.length === 0 ? (
         <EmptyState
-          title={isSearching ? 'Không tìm thấy tệp nào phù hợp' : 'Thư mục này hiện đang trống'}
+          title={
+            isSearching
+              ? 'Không tìm thấy tệp nào phù hợp'
+              : isDriveFileOnly
+              ? 'Chưa thể hiển thị tệp có sẵn trên Google Drive'
+              : 'Thư mục này hiện đang trống'
+          }
           description={
             isSearching
               ? 'Hãy thử thay đổi từ khóa tìm kiếm.'
-              : 'Bạn có thể tải tệp lên hoặc tạo thư mục mới để bắt đầu.'
+              : isDriveFileOnly
+              ? 'Tài khoản của bạn được cấp quyền giới hạn (drive.file). Google không cho phép ứng dụng đọc các tệp đã có từ trước trên Drive. Hãy bấm nút dưới đây để cấp lại quyền truy cập đầy đủ.'
+              : currentRootView === 'root'
+              ? 'Thư mục gốc "Drive của tôi" không có tệp nào. Bạn có thể bấm "Xem tất cả tệp" để duyệt tất cả tệp nằm trong các thư mục con hoặc tải tệp mới lên.'
+              : 'Không có tệp nào trong mục này.'
           }
           action={
             isSearching ? (
               <Button variant="secondary" size="sm" onClick={() => setSearchQuery('')}>
                 Xóa tìm kiếm
               </Button>
-            ) : (
+            ) : isDriveFileOnly ? (
               <Button
                 variant="primary"
                 size="sm"
-                icon={<Plus size={16} />}
-                onClick={() => setUploadModalOpen(true)}
+                isLoading={isReconnecting}
+                onClick={() => handleReconnect()}
               >
-                Tải tệp tin lên
+                Cấp lại quyền Google Drive ngay
               </Button>
+            ) : (
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                {currentRootView === 'root' && (
+                  <Button variant="secondary" size="sm" onClick={() => handleSelectRootView('all')}>
+                    Xem tất cả tệp trong Drive
+                  </Button>
+                )}
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={<Plus size={16} />}
+                  onClick={() => setUploadModalOpen(true)}
+                >
+                  Tải tệp tin lên
+                </Button>
+              </div>
             )
           }
         />

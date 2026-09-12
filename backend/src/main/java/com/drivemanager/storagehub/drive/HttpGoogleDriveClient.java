@@ -12,6 +12,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Component
@@ -39,16 +40,28 @@ public class HttpGoogleDriveClient implements GoogleDriveClient {
     @Override
     public DriveDtos.DriveFileListResponse listFiles(String accessToken, String parentId, String pageToken, int pageSize) {
         int size = Math.max(1, Math.min(pageSize > 0 ? pageSize : 50, 100));
-        String parent = (parentId == null || parentId.isBlank() || "root".equalsIgnoreCase(parentId)) ? "root" : parentId.trim();
-        String query = "'" + escapeQuery(parent) + "' in parents and trashed = false";
+        String query;
+        if ("all".equalsIgnoreCase(parentId)) {
+            query = "trashed = false";
+        } else if ("sharedWithMe".equalsIgnoreCase(parentId)) {
+            query = "sharedWithMe = true and trashed = false";
+        } else {
+            String parent = (parentId == null || parentId.isBlank() || "root".equalsIgnoreCase(parentId)) ? "root" : parentId.trim();
+            query = "'" + escapeQuery(parent) + "' in parents and trashed = false";
+        }
 
         UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(DRIVE_API_BASE + "/files")
                 .queryParam("q", query)
                 .queryParam("pageSize", size)
                 .queryParam("fields", LIST_FIELDS)
-                .queryParam("orderBy", "folder,name_natural,modifiedTime desc")
                 .queryParam("supportsAllDrives", true)
                 .queryParam("includeItemsFromAllDrives", true);
+
+        if ("sharedWithMe".equalsIgnoreCase(parentId)) {
+            builder.queryParam("orderBy", "sharedWithMeTime desc");
+        } else {
+            builder.queryParam("orderBy", "folder,modifiedTime desc,name");
+        }
 
         if (pageToken != null && !pageToken.isBlank()) {
             builder.queryParam("pageToken", pageToken);
@@ -57,18 +70,31 @@ public class HttpGoogleDriveClient implements GoogleDriveClient {
         URI uri = builder.build().toUri();
         log.debug("Listing Drive files: uri={}", uri);
 
-        RawFileListResponse resp = restClient.get()
-                .uri(uri)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                .retrieve()
-                .body(RawFileListResponse.class);
+        try {
+            RawFileListResponse resp = restClient.get()
+                    .uri(uri)
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                    .retrieve()
+                    .body(RawFileListResponse.class);
 
-        if (resp == null || resp.files == null) {
-            return new DriveDtos.DriveFileListResponse(List.of(), null);
+            if (resp == null || resp.files == null) {
+                return new DriveDtos.DriveFileListResponse(List.of(), null);
+            }
+
+            List<DriveDtos.DriveFileDto> list = resp.files.stream()
+                    .map(this::mapToFileDto)
+                    .sorted((a, b) -> {
+                        if (a.isFolder() != b.isFolder()) {
+                            return a.isFolder() ? -1 : 1;
+                        }
+                        return 0;
+                    })
+                    .toList();
+            return new DriveDtos.DriveFileListResponse(list, resp.nextPageToken);
+        } catch (RestClientResponseException ex) {
+            log.error("Google Drive API listFiles failed: uri={} status={} body={}", uri, ex.getStatusCode(), ex.getResponseBodyAsString());
+            throw new IllegalStateException("Lỗi Google Drive API (" + ex.getStatusCode().value() + "): " + ex.getResponseBodyAsString(), ex);
         }
-
-        List<DriveDtos.DriveFileDto> list = resp.files.stream().map(this::mapToFileDto).toList();
-        return new DriveDtos.DriveFileListResponse(list, resp.nextPageToken);
     }
 
     @Override
@@ -77,17 +103,24 @@ public class HttpGoogleDriveClient implements GoogleDriveClient {
         StringBuilder qBuilder = new StringBuilder();
         qBuilder.append("trashed = false and name contains '").append(escapeQuery(query.trim())).append("'");
 
-        if (parentId != null && !parentId.isBlank() && !"root".equalsIgnoreCase(parentId)) {
+        if (parentId != null && !parentId.isBlank() && !"root".equalsIgnoreCase(parentId) && !"all".equalsIgnoreCase(parentId) && !"sharedWithMe".equalsIgnoreCase(parentId)) {
             qBuilder.append(" and '").append(escapeQuery(parentId.trim())).append("' in parents");
+        } else if ("sharedWithMe".equalsIgnoreCase(parentId)) {
+            qBuilder.append(" and sharedWithMe = true");
         }
 
         UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(DRIVE_API_BASE + "/files")
                 .queryParam("q", qBuilder.toString())
                 .queryParam("pageSize", size)
                 .queryParam("fields", LIST_FIELDS)
-                .queryParam("orderBy", "folder,modifiedTime desc")
                 .queryParam("supportsAllDrives", true)
                 .queryParam("includeItemsFromAllDrives", true);
+
+        if ("sharedWithMe".equalsIgnoreCase(parentId)) {
+            builder.queryParam("orderBy", "sharedWithMeTime desc");
+        } else {
+            builder.queryParam("orderBy", "folder,modifiedTime desc");
+        }
 
         if (pageToken != null && !pageToken.isBlank()) {
             builder.queryParam("pageToken", pageToken);
@@ -96,18 +129,31 @@ public class HttpGoogleDriveClient implements GoogleDriveClient {
         URI uri = builder.build().toUri();
         log.debug("Searching Drive files: uri={}", uri);
 
-        RawFileListResponse resp = restClient.get()
-                .uri(uri)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                .retrieve()
-                .body(RawFileListResponse.class);
+        try {
+            RawFileListResponse resp = restClient.get()
+                    .uri(uri)
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                    .retrieve()
+                    .body(RawFileListResponse.class);
 
-        if (resp == null || resp.files == null) {
-            return new DriveDtos.DriveFileListResponse(List.of(), null);
+            if (resp == null || resp.files == null) {
+                return new DriveDtos.DriveFileListResponse(List.of(), null);
+            }
+
+            List<DriveDtos.DriveFileDto> list = resp.files.stream()
+                    .map(this::mapToFileDto)
+                    .sorted((a, b) -> {
+                        if (a.isFolder() != b.isFolder()) {
+                            return a.isFolder() ? -1 : 1;
+                        }
+                        return 0;
+                    })
+                    .toList();
+            return new DriveDtos.DriveFileListResponse(list, resp.nextPageToken);
+        } catch (RestClientResponseException ex) {
+            log.error("Google Drive API searchFiles failed: uri={} status={} body={}", uri, ex.getStatusCode(), ex.getResponseBodyAsString());
+            throw new IllegalStateException("Lỗi Google Drive API (" + ex.getStatusCode().value() + "): " + ex.getResponseBodyAsString(), ex);
         }
-
-        List<DriveDtos.DriveFileDto> list = resp.files.stream().map(this::mapToFileDto).toList();
-        return new DriveDtos.DriveFileListResponse(list, resp.nextPageToken);
     }
 
     @Override
@@ -117,16 +163,21 @@ public class HttpGoogleDriveClient implements GoogleDriveClient {
                 .queryParam("supportsAllDrives", true)
                 .build().toUri();
 
-        RawFileItem raw = restClient.get()
-                .uri(uri)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                .retrieve()
-                .body(RawFileItem.class);
+        try {
+            RawFileItem raw = restClient.get()
+                    .uri(uri)
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                    .retrieve()
+                    .body(RawFileItem.class);
 
-        if (raw == null || raw.id == null) {
-            throw new IllegalArgumentException("Google Drive file not found: " + fileId);
+            if (raw == null || raw.id == null) {
+                throw new IllegalArgumentException("Google Drive file not found: " + fileId);
+            }
+            return mapToFileDto(raw);
+        } catch (RestClientResponseException ex) {
+            log.error("Google Drive API getFile failed: fileId={} status={} body={}", fileId, ex.getStatusCode(), ex.getResponseBodyAsString());
+            throw new IllegalStateException("Lỗi Google Drive API (" + ex.getStatusCode().value() + "): " + ex.getResponseBodyAsString(), ex);
         }
-        return mapToFileDto(raw);
     }
 
     @Override
@@ -182,7 +233,8 @@ public class HttpGoogleDriveClient implements GoogleDriveClient {
     public DriveDtos.DriveFileDto uploadResumable(String accessToken, String filename, String mimeType,
                                                   String parentId, InputStream contentStream, long sizeBytes) {
         try {
-            String targetParent = (parentId == null || parentId.isBlank() || "root".equalsIgnoreCase(parentId)) ? "root" : parentId.trim();
+            String targetParent = (parentId == null || parentId.isBlank() || "root".equalsIgnoreCase(parentId)
+                    || "all".equalsIgnoreCase(parentId) || "sharedWithMe".equalsIgnoreCase(parentId)) ? "root" : parentId.trim();
             Map<String, Object> metadata = new HashMap<>();
             metadata.put("name", filename);
             metadata.put("mimeType", mimeType);
@@ -223,17 +275,24 @@ public class HttpGoogleDriveClient implements GoogleDriveClient {
                     .body(RawFileItem.class);
 
             if (uploaded == null || uploaded.id == null) {
-                throw new IllegalStateException("Google Drive did not return uploaded file metadata");
+                throw new IllegalStateException("Google Drive did not return file metadata after upload");
             }
+
+            log.info("Google Drive resumable upload completed: fileId={} name={} size={}", uploaded.id, uploaded.name, uploaded.size);
             return mapToFileDto(uploaded);
+        } catch (RestClientResponseException ex) {
+            log.error("Google Drive API upload failed: status={} body={}", ex.getStatusCode(), ex.getResponseBodyAsString());
+            throw new IllegalStateException("Lỗi tải tệp lên Google Drive (" + ex.getStatusCode().value() + "): " + ex.getResponseBodyAsString(), ex);
         } catch (Exception ex) {
+            log.error("Google Drive upload error: {}", ex.getMessage(), ex);
             throw new IllegalStateException("Error during Google Drive resumable upload: " + ex.getMessage(), ex);
         }
     }
 
     @Override
     public DriveDtos.DriveFileDto createFolder(String accessToken, String name, String parentId) {
-        String targetParent = (parentId == null || parentId.isBlank() || "root".equalsIgnoreCase(parentId)) ? "root" : parentId.trim();
+        String targetParent = (parentId == null || parentId.isBlank() || "root".equalsIgnoreCase(parentId)
+                || "all".equalsIgnoreCase(parentId) || "sharedWithMe".equalsIgnoreCase(parentId)) ? "root" : parentId.trim();
         Map<String, Object> body = Map.of(
                 "name", name.trim(),
                 "mimeType", FOLDER_MIME_TYPE,
@@ -282,7 +341,8 @@ public class HttpGoogleDriveClient implements GoogleDriveClient {
 
     @Override
     public DriveDtos.DriveFileDto moveFile(String accessToken, String fileId, String newParentId, String oldParentId) {
-        String targetNewParent = (newParentId == null || newParentId.isBlank() || "root".equalsIgnoreCase(newParentId)) ? "root" : newParentId.trim();
+        String targetNewParent = (newParentId == null || newParentId.isBlank() || "root".equalsIgnoreCase(newParentId)
+                || "all".equalsIgnoreCase(newParentId) || "sharedWithMe".equalsIgnoreCase(newParentId)) ? "root" : newParentId.trim();
 
         String removeParents = oldParentId;
         if (removeParents == null || removeParents.isBlank()) {
