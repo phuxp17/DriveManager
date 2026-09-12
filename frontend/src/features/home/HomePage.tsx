@@ -11,7 +11,6 @@ import {
   Check,
   Copy,
   ArrowRight,
-  FolderKanban,
   FileText,
   Image as ImageIcon,
   Film,
@@ -44,6 +43,14 @@ const DEMO_FILES: DemoFile[] = [
 
 export const HomePage: React.FC = () => {
   const { user } = useAuth();
+
+  // Language state (defaults to English for international reviewers/bots, or Vietnamese if navigator indicates)
+  const [lang, setLang] = useState<'en' | 'vi'>(() => {
+    if (typeof window !== 'undefined' && navigator.language?.toLowerCase().startsWith('vi')) {
+      return 'vi';
+    }
+    return 'en';
+  });
 
   // Active showcase tab
   const [activeTab, setActiveTab] = useState<'sync' | 'tags' | 'share' | 'search'>('sync');
@@ -99,43 +106,65 @@ export const HomePage: React.FC = () => {
       {/* Glass Header */}
       <header className={styles.header}>
         <div className={styles.headerInner}>
-          <Link to="/" className={styles.logoArea}>
+          <Link to="/" className={styles.logoArea} title="DriveManager Home">
             <div className={styles.logoIcon}>
-              <img src="/logo.png" alt="" />
+              <img src="/logo.png" alt="DriveManager Logo" />
               <span className={styles.pulseDot} />
             </div>
             <span>DriveManager</span>
           </Link>
 
           <nav className={styles.navLinks}>
+            <a href="#muc-dich" className={styles.navPill}>
+              <ShieldCheck size={14} /> {lang === 'en' ? 'About & Purpose' : 'Mục đích ứng dụng'}
+            </a>
             <a href="#tinh-nang" className={styles.navPill}>
-              <Zap size={14} /> Tính năng
+              <Zap size={14} /> {lang === 'en' ? 'Features' : 'Tính năng'}
             </a>
             <a href="#dam-may" className={styles.navPill}>
-              <Cloud size={14} /> Đám mây
+              <Cloud size={14} /> {lang === 'en' ? 'Cloud' : 'Đám mây'}
             </a>
             <a href="#bao-mat" className={styles.navPill}>
-              <ShieldCheck size={14} /> Bảo mật
+              <Lock size={14} /> {lang === 'en' ? 'Security' : 'Bảo mật'}
             </a>
             <Link to="/privacy" className={styles.navPill}>
-              <FileText size={14} /> Chính sách & Quyền riêng tư
+              <FileText size={14} /> {lang === 'en' ? 'Privacy Policy' : 'Chính sách bảo mật'}
             </Link>
           </nav>
 
-
           <div className={styles.headerActions}>
+            {/* Language Switcher */}
+            <div className={styles.langToggle}>
+              <button
+                type="button"
+                className={`${styles.langBtn} ${lang === 'en' ? styles.langBtnActive : ''}`}
+                onClick={() => setLang('en')}
+                title="Switch to English"
+              >
+                EN
+              </button>
+              <button
+                type="button"
+                className={`${styles.langBtn} ${lang === 'vi' ? styles.langBtnActive : ''}`}
+                onClick={() => setLang('vi')}
+                title="Chuyển sang Tiếng Việt"
+              >
+                VI
+              </button>
+            </div>
+
             {user ? (
               <Link to="/app" className={styles.btnPrimary}>
-                <span>Vào ứng dụng</span>
+                <span>{lang === 'en' ? 'Open Dashboard' : 'Vào ứng dụng'}</span>
                 <ArrowRight size={16} />
               </Link>
             ) : (
               <>
                 <Link to="/login" className={styles.btnGhost}>
-                  Đăng nhập
+                  {lang === 'en' ? 'Sign In' : 'Đăng nhập'}
                 </Link>
                 <Link to="/register" className={styles.btnPrimary}>
-                  <span>Bắt đầu ngay</span>
+                  <span>{lang === 'en' ? 'Get Started' : 'Bắt đầu ngay'}</span>
                   <ArrowRight size={16} />
                 </Link>
               </>
@@ -148,25 +177,34 @@ export const HomePage: React.FC = () => {
       <section className={styles.hero}>
         <div className={styles.badgeMotion}>
           <Sparkles size={15} />
-          <span>DriveManager 2.0 • Không gian lưu trữ đám mây hợp nhất</span>
+          <span>
+            {lang === 'en'
+              ? 'DriveManager 2.0 • Unified Cloud Storage & File Manager'
+              : 'DriveManager 2.0 • Không gian lưu trữ đám mây hợp nhất'}
+          </span>
         </div>
 
+        {/* Prominent App Name in H1 to satisfy Google Branding Verification */}
         <h1 className={styles.heroTitle}>
-          Một Nơi Cho Mọi <span className={styles.gradientText}>Đám Mây</span>.
+          DriveManager — <span className={styles.gradientText}>
+            {lang === 'en' ? 'Unified Cloud Storage' : 'Lưu Trữ Đám Mây Hợp Nhất'}
+          </span>
         </h1>
 
         <p className={styles.heroSubtitle}>
-          Đồng bộ Google Drive, phân loại đa chiều bằng Tag và chia sẻ bảo mật tức thì.
+          {lang === 'en'
+            ? 'Connect your Google Drive, organize files across multi-dimensional tags, and share securely with password protection — all in one centralized dashboard.'
+            : 'Đồng bộ Google Drive, phân loại đa chiều bằng Tag và chia sẻ bảo mật tức thì trên một giao diện thống nhất.'}
         </p>
 
         <div className={styles.heroCtaGroup}>
           <Link to={user ? "/app" : "/register"} className={styles.btnLargePrimary}>
-            <span>{user ? "Mở Bảng điều khiển" : "Khám phá miễn phí"}</span>
+            <span>{user ? (lang === 'en' ? "Open Dashboard" : "Mở Bảng điều khiển") : (lang === 'en' ? "Explore Free" : "Khám phá miễn phí")}</span>
             <ArrowRight size={18} />
           </Link>
-          <a href="#live-demo" className={styles.btnLargeGhost}>
-            <SlidersHorizontal size={18} />
-            <span>Thử tính năng tương tác</span>
+          <a href="#muc-dich" className={styles.btnLargeGhost}>
+            <ShieldCheck size={18} />
+            <span>{lang === 'en' ? "Application Purpose" : "Mục đích ứng dụng"}</span>
           </a>
         </div>
 
@@ -198,28 +236,28 @@ export const HomePage: React.FC = () => {
               onClick={() => setActiveTab('sync')}
             >
               <Cloud size={15} />
-              <span>Đồng bộ Cloud</span>
+              <span>{lang === 'en' ? 'Cloud Sync' : 'Đồng bộ Cloud'}</span>
             </button>
             <button
               className={`${styles.tabItem} ${activeTab === 'tags' ? styles.tabItemActive : ''}`}
               onClick={() => setActiveTab('tags')}
             >
               <Tag size={15} />
-              <span>Bộ sưu tập & Tag</span>
+              <span>{lang === 'en' ? 'Collections & Tags' : 'Bộ sưu tập & Tag'}</span>
             </button>
             <button
               className={`${styles.tabItem} ${activeTab === 'share' ? styles.tabItemActive : ''}`}
               onClick={() => setActiveTab('share')}
             >
               <Share2 size={15} />
-              <span>Chia sẻ an toàn</span>
+              <span>{lang === 'en' ? 'Secure Sharing' : 'Chia sẻ an toàn'}</span>
             </button>
             <button
               className={`${styles.tabItem} ${activeTab === 'search' ? styles.tabItemActive : ''}`}
               onClick={() => setActiveTab('search')}
             >
               <Search size={15} />
-              <span>Tìm kiếm tức thì</span>
+              <span>{lang === 'en' ? 'Instant Search' : 'Tìm kiếm tức thì'}</span>
             </button>
           </div>
 
@@ -233,7 +271,7 @@ export const HomePage: React.FC = () => {
                     <Cloud size={24} />
                   </div>
                   <h4 className={styles.cloudName}>Google Drive</h4>
-                  <span className={styles.cloudBadge}>OAuth 2.0 Đã liên kết</span>
+                  <span className={styles.cloudBadge}>{lang === 'en' ? 'OAuth 2.0 Connected' : 'OAuth 2.0 Đã liên kết'}</span>
                 </div>
 
                 <div className={styles.syncStream}>
@@ -244,7 +282,7 @@ export const HomePage: React.FC = () => {
                     style={{ cursor: 'pointer', border: 'none' }}
                   >
                     <RefreshCw size={13} className={isSyncing ? 'animate-spin' : ''} style={{ animation: isSyncing ? 'spin 1s linear infinite' : 'none' }} />
-                    <span>{isSyncing ? 'Đang đồng bộ...' : `Tự động đồng bộ (${syncCount} tệp)`}</span>
+                    <span>{isSyncing ? (lang === 'en' ? 'Syncing...' : 'Đang đồng bộ...') : `${lang === 'en' ? 'Auto-Sync' : 'Tự động đồng bộ'} (${syncCount} files)`}</span>
                   </button>
                 </div>
 
@@ -253,7 +291,7 @@ export const HomePage: React.FC = () => {
                     <HardDrive size={24} />
                   </div>
                   <h4 className={styles.cloudName}>DriveManager Hub</h4>
-                  <span className={styles.cloudBadge}>Trạng thái: Sẵn sàng</span>
+                  <span className={styles.cloudBadge}>{lang === 'en' ? 'Status: Ready' : 'Trạng thái: Sẵn sàng'}</span>
                 </div>
               </div>
             )}
@@ -263,11 +301,11 @@ export const HomePage: React.FC = () => {
               <div className={styles.tagsContainer}>
                 <div className={styles.tagsRow}>
                   {[
-                    { id: 'all', label: 'Tất cả' },
-                    { id: 'design', label: '🎨 Thiết kế' },
-                    { id: 'finance', label: '📊 Tài chính' },
-                    { id: 'media', label: '🎬 Media' },
-                    { id: 'docs', label: '📄 Tài liệu' },
+                    { id: 'all', label: lang === 'en' ? 'All' : 'Tất cả' },
+                    { id: 'design', label: lang === 'en' ? '🎨 Design' : '🎨 Thiết kế' },
+                    { id: 'finance', label: lang === 'en' ? '📊 Finance' : '📊 Tài chính' },
+                    { id: 'media', label: lang === 'en' ? '🎬 Media' : '🎬 Media' },
+                    { id: 'docs', label: lang === 'en' ? '📄 Documents' : '📄 Tài liệu' },
                   ].map((tag) => (
                     <button
                       key={tag.id}
@@ -304,18 +342,18 @@ export const HomePage: React.FC = () => {
                 <div className={styles.shareHeader}>
                   <h4 className={styles.shareTitle}>
                     <Share2 size={16} color="var(--color-primary)" />
-                    <span>Liên kết chia sẻ bảo mật</span>
+                    <span>{lang === 'en' ? 'Encrypted Share Link' : 'Liên kết chia sẻ bảo mật'}</span>
                   </h4>
-                  <span className={styles.speedBadge}>Mã hoá AES-256</span>
+                  <span className={styles.speedBadge}>{lang === 'en' ? 'AES-256 GCM' : 'Mã hoá AES-256'}</span>
                 </div>
 
                 <div className={styles.linkBox}>
                   <span className={styles.linkText}>
-                    https://drivemanager.app/share/v9x4k12m8
+                    https://drive.vplatform.dev/share/v9x4k12m8
                   </span>
                   <button className={styles.copyBadge} onClick={handleCopyLink}>
                     {copied ? <Check size={13} /> : <Copy size={13} />}
-                    <span>{copied ? 'Đã sao chép' : 'Sao chép'}</span>
+                    <span>{copied ? (lang === 'en' ? 'Copied' : 'Đã sao chép') : (lang === 'en' ? 'Copy' : 'Sao chép')}</span>
                   </button>
                 </div>
 
@@ -326,11 +364,11 @@ export const HomePage: React.FC = () => {
                     style={{ cursor: 'pointer', border: 'none' }}
                   >
                     <Lock size={12} />
-                    <span>{requirePassword ? 'Mật khẩu: Bật' : 'Mật khẩu: Tắt'}</span>
+                    <span>{requirePassword ? (lang === 'en' ? 'PIN: Enabled' : 'Mật khẩu: Bật') : (lang === 'en' ? 'PIN: Disabled' : 'Mật khẩu: Tắt')}</span>
                   </button>
 
                   <div className={styles.securityChip}>
-                    <span>⏱ Thời hạn: 24h</span>
+                    <span>⏱ {lang === 'en' ? 'Expires: 24h' : 'Thời hạn: 24h'}</span>
                   </div>
 
                   <button
@@ -338,14 +376,14 @@ export const HomePage: React.FC = () => {
                     onClick={() => setActivePermission('view')}
                     style={{ cursor: 'pointer', border: 'none' }}
                   >
-                    <span>Chỉ xem</span>
+                    <span>{lang === 'en' ? 'View Only' : 'Chỉ xem'}</span>
                   </button>
                   <button
                     className={`${styles.securityChip} ${activePermission === 'download' ? styles.securityChipActive : ''}`}
                     onClick={() => setActivePermission('download')}
                     style={{ cursor: 'pointer', border: 'none' }}
                   >
-                    <span>Cho phép tải</span>
+                    <span>{lang === 'en' ? 'Allow Download' : 'Cho phép tải'}</span>
                   </button>
                 </div>
               </div>
@@ -359,7 +397,7 @@ export const HomePage: React.FC = () => {
                   <input
                     type="text"
                     className={styles.searchInput}
-                    placeholder="Gõ từ khóa để lọc tệp tức thì (ví dụ: pdf, design, zip)..."
+                    placeholder={lang === 'en' ? "Search across Google Drive files (e.g., pdf, design, report)..." : "Gõ từ khóa để lọc tệp tức thì (ví dụ: pdf, design, zip)..."}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -389,12 +427,106 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* =========================================================
-          BENTO FEATURE GRID (MOTION & MINIMAL TEXT)
+          APPLICATION PURPOSE & GOOGLE DRIVE INTEGRATION SECTION
+          Explicitly explains the purpose of the app and Google Drive usage
+          (Fully resolves Google OAuth Verification Requirements)
+          ========================================================= */}
+      <section id="muc-dich" className={styles.purposeSection}>
+        <div className={styles.purposeCard}>
+          <div className={styles.purposeHeader}>
+            <div className={styles.purposeBadge}>
+              <ShieldCheck size={14} />
+              <span>{lang === 'en' ? 'Application Purpose & Google Drive Integration' : 'Mục đích Ứng dụng & Tích hợp Google Drive'}</span>
+            </div>
+          </div>
+
+          <h2 className={styles.purposeTitle}>
+            {lang === 'en'
+              ? 'What is DriveManager and Why Does It Use Google Drive?'
+              : 'DriveManager là gì và Tại sao cần kết nối Google Drive?'}
+          </h2>
+
+          <p className={styles.purposeDescription}>
+            {lang === 'en'
+              ? 'DriveManager is an open, unified personal cloud storage organizer designed to help users search, categorize, index, and securely share their documents across cloud storage providers in one central dashboard. When you connect your Google Drive account, DriveManager uses Google OAuth 2.0 to enhance your file organization experience while strictly respecting your privacy.'
+              : 'DriveManager là ứng dụng quản lý lưu trữ đám mây hợp nhất, giúp người dùng dễ dàng tìm kiếm, gắn thẻ phân loại, quản lý chỉ mục và chia sẻ tài liệu giữa các dịch vụ lưu trữ trên một bảng điều khiển tập trung duy nhất. Khi bạn kết nối Google Drive, DriveManager sử dụng giao thức chuẩn Google OAuth 2.0 để tối ưu hóa trải nghiệm quản lý tệp tin nhưng tuyệt đối tôn trọng quyền riêng tư của bạn.'}
+          </p>
+
+          <div className={styles.purposeGrid}>
+            <div className={styles.purposeItem}>
+              <div className={styles.purposeItemIcon}>
+                <Search size={20} />
+              </div>
+              <h4 className={styles.purposeItemTitle}>
+                {lang === 'en' ? '1. Unified Metadata Indexing' : '1. Lập chỉ mục siêu dữ liệu'}
+              </h4>
+              <p className={styles.purposeItemText}>
+                {lang === 'en'
+                  ? 'DriveManager reads file metadata (file names, sizes, mime types, and modified dates) via the Google Drive API so you can view all your stored assets in a single, fast searchable catalog without downloading raw files to our servers.'
+                  : 'DriveManager đọc siêu dữ liệu tệp (tên, dung lượng, định dạng và ngày sửa đổi) qua Google Drive API để hiển thị danh mục tìm kiếm tốc độ cao mà không cần tải nội dung tệp thô về máy chủ.'}
+              </p>
+            </div>
+
+            <div className={styles.purposeItem}>
+              <div className={styles.purposeItemIcon}>
+                <Tag size={20} />
+              </div>
+              <h4 className={styles.purposeItemTitle}>
+                {lang === 'en' ? '2. Cross-Folder & Tag Organization' : '2. Gắn nhãn đa chiều & Bộ sưu tập'}
+              </h4>
+              <p className={styles.purposeItemText}>
+                {lang === 'en'
+                  ? 'Traditional folder trees can become cluttered. DriveManager allows you to attach multi-dimensional tags and group files into virtual collections without altering or moving original files in your Google Drive.'
+                  : 'Không còn phải sao chép tệp giữa các thư mục lộn xộn. DriveManager cho phép bạn gắn nhiều nhãn Tag và gom nhóm vào các bộ sưu tập ảo mà không làm thay đổi vị trí gốc của tệp trên Google Drive.'}
+              </p>
+            </div>
+
+            <div className={styles.purposeItem}>
+              <div className={styles.purposeItemIcon}>
+                <Share2 size={20} />
+              </div>
+              <h4 className={styles.purposeItemTitle}>
+                {lang === 'en' ? '3. Controlled Temporary Sharing' : '3. Chia sẻ có kiểm soát & Mã bảo vệ'}
+              </h4>
+              <p className={styles.purposeItemText}>
+                {lang === 'en'
+                  ? 'Generate temporary, password-protected download links for specific files with custom expiration timers. You maintain full ownership and can revoke shared access at any time with one click.'
+                  : 'Tạo liên kết tải xuống tạm thời có mật khẩu bảo vệ và giới hạn thời gian tự hủy. Bạn giữ toàn quyền sở hữu và có thể thu hồi quyền chia sẻ bất kỳ lúc nào chỉ với một thao tác.'}
+              </p>
+            </div>
+
+            <div className={styles.purposeItem}>
+              <div className={styles.purposeItemIcon}>
+                <Lock size={20} />
+              </div>
+              <h4 className={styles.purposeItemTitle}>
+                {lang === 'en' ? '4. Strict Privacy & Zero Data Monetization' : '4. Cam kết Bảo mật & Không bán dữ liệu'}
+              </h4>
+              <p className={styles.purposeItemText}>
+                {lang === 'en'
+                  ? 'DriveManager never sells your personal data, does not serve targeted ads, and never uses Google Drive data to train AI or machine learning models. OAuth tokens are encrypted with AES-256 GCM.'
+                  : 'DriveManager tuyệt đối không bán dữ liệu cá nhân, không hiển thị quảng cáo và không dùng dữ liệu Google Drive để huấn luyện mô hình AI. Token OAuth được mã hóa an toàn bằng thuật toán AES-256 GCM.'}
+              </p>
+            </div>
+          </div>
+
+          <div className={styles.limitedUseBox}>
+            <strong>Google API Limited Use Disclosure:</strong> DriveManager's use and transfer of information received from Google APIs to any other app will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)', textDecoration: 'underline', fontWeight: 600 }}>Google API Services User Data Policy</a>, including the Limited Use requirements.
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================
+          BENTO FEATURE GRID
           ========================================================= */}
       <section id="tinh-nang" className={styles.sectionContainer}>
         <div className={styles.sectionHeader}>
-          <span className={styles.sectionEyebrow}>Tính năng cốt lõi</span>
-          <h2 className={styles.sectionTitle}>Thiết kế cho tốc độ và kiểm soát</h2>
+          <span className={styles.sectionEyebrow}>
+            {lang === 'en' ? 'Core Capabilities' : 'Tính năng cốt lõi'}
+          </span>
+          <h2 className={styles.sectionTitle}>
+            {lang === 'en' ? 'Engineered for Speed, Clarity, and Control' : 'Thiết kế cho tốc độ và kiểm soát'}
+          </h2>
         </div>
 
         <div className={styles.bentoGrid}>
@@ -404,9 +536,13 @@ export const HomePage: React.FC = () => {
               <div className={`${styles.bentoIconArea} ${styles.iconBlue}`}>
                 <Cloud size={24} />
               </div>
-              <h3 className={styles.bentoHeading}>Kết nối Đa Đám Mây Tập Trung</h3>
+              <h3 className={styles.bentoHeading}>
+                {lang === 'en' ? 'Centralized Multi-Cloud Connection' : 'Kết nối Đa Đám Mây Tập Trung'}
+              </h3>
               <p className={styles.bentoSubtext}>
-                Tích hợp Google Drive và bộ lưu trữ độc lập qua giao thức OAuth 2.0 chuẩn quốc tế.
+                {lang === 'en'
+                  ? 'Integrates Google Drive and independent storage vaults using standard, secure OAuth 2.0 authentication.'
+                  : 'Tích hợp Google Drive và bộ lưu trữ độc lập qua giao thức OAuth 2.0 chuẩn quốc tế.'}
               </p>
             </div>
 
@@ -431,9 +567,13 @@ export const HomePage: React.FC = () => {
               <div className={`${styles.bentoIconArea} ${styles.iconPurple}`}>
                 <Tag size={24} />
               </div>
-              <h3 className={styles.bentoHeading}>Bộ sưu tập & Tag</h3>
+              <h3 className={styles.bentoHeading}>
+                {lang === 'en' ? 'Collections & Smart Tags' : 'Bộ sưu tập & Tag'}
+              </h3>
               <p className={styles.bentoSubtext}>
-                Không còn lạc trong mê cung thư mục. Gắn nhãn đa chiều, nhóm tệp thông minh.
+                {lang === 'en'
+                  ? 'No more getting lost in deep folder hierarchies. Attach multiple tags and cross-reference files instantly.'
+                  : 'Không còn lạc trong mê cung thư mục. Gắn nhãn đa chiều, nhóm tệp thông minh.'}
               </p>
             </div>
 
@@ -450,15 +590,19 @@ export const HomePage: React.FC = () => {
               <div className={`${styles.bentoIconArea} ${styles.iconGreen}`}>
                 <Zap size={24} />
               </div>
-              <h3 className={styles.bentoHeading}>Hàng đợi Tải lên Realtime</h3>
+              <h3 className={styles.bentoHeading}>
+                {lang === 'en' ? 'Realtime Transfer Pipeline' : 'Hàng đợi Tải lên Realtime'}
+              </h3>
               <p className={styles.bentoSubtext}>
-                Tiến trình đồng bộ mượt mà, phân luồng đa tệp không gián đoạn.
+                {lang === 'en'
+                  ? 'Smooth background upload process with multi-file chunking and resilient reconnection handling.'
+                  : 'Tiến trình đồng bộ mượt mà, phân luồng đa tệp không gián đoạn.'}
               </p>
             </div>
 
             <div className={styles.progressBarMotion}>
               <div className={styles.progressLabelRow}>
-                <span>Đang truyền tải</span>
+                <span>{lang === 'en' ? 'Transferring' : 'Đang truyền tải'}</span>
                 <span>48 MB/s</span>
               </div>
               <div className={styles.progressTrack}>
@@ -473,9 +617,13 @@ export const HomePage: React.FC = () => {
               <div className={`${styles.bentoIconArea} ${styles.iconOrange}`}>
                 <ShieldCheck size={24} />
               </div>
-              <h3 className={styles.bentoHeading}>Bảo mật Đa Lớp</h3>
+              <h3 className={styles.bentoHeading}>
+                {lang === 'en' ? 'Multi-Layer Security' : 'Bảo mật Đa Lớp'}
+              </h3>
               <p className={styles.bentoSubtext}>
-                Phiên đăng nhập an toàn, CSRF Token và mã hóa dữ liệu độc quyền.
+                {lang === 'en'
+                  ? 'Secure HTTP-only session cookies, CSRF protection tokens, and encrypted storage credentials.'
+                  : 'Phiên đăng nhập an toàn, CSRF Token và mã hóa dữ liệu độc quyền.'}
               </p>
             </div>
 
@@ -492,40 +640,44 @@ export const HomePage: React.FC = () => {
               <div className={`${styles.bentoIconArea} ${styles.iconBlue}`}>
                 <Share2 size={24} />
               </div>
-              <h3 className={styles.bentoHeading}>Chia sẻ 1-Click</h3>
+              <h3 className={styles.bentoHeading}>
+                {lang === 'en' ? '1-Click Secure Sharing' : 'Chia sẻ 1-Click'}
+              </h3>
               <p className={styles.bentoSubtext}>
-                Tạo link chia sẻ với mật khẩu bảo vệ, giới hạn hạn dùng và phân quyền xem/tải.
+                {lang === 'en'
+                  ? 'Generate custom sharing links with password PIN protection, expiry timers, and view/download permissions.'
+                  : 'Tạo link chia sẻ với mật khẩu bảo vệ, giới hạn hạn dùng và phân quyền xem/tải.'}
               </p>
             </div>
 
             <div style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
-              <span className={styles.speedBadge}>Link bảo vệ</span>
-              <span className={styles.speedBadge}>Mã PIN</span>
+              <span className={styles.speedBadge}>{lang === 'en' ? 'PIN Protected' : 'Mã PIN'}</span>
+              <span className={styles.speedBadge}>{lang === 'en' ? 'Auto Expiry' : 'Tự hủy'}</span>
             </div>
           </div>
         </div>
       </section>
 
       {/* =========================================================
-          METRICS BAR (ZERO TEXT FLUFF, MAX IMPACT)
+          METRICS BAR
           ========================================================= */}
       <section className={styles.metricsBar}>
         <div className={styles.metricsInner}>
           <div>
             <div className={styles.metricValue}>0s</div>
-            <div className={styles.metricLabel}>Cấu hình phức tạp</div>
+            <div className={styles.metricLabel}>{lang === 'en' ? 'Complex Configuration' : 'Cấu hình phức tạp'}</div>
           </div>
           <div>
             <div className={styles.metricValue}>OAuth 2.0</div>
-            <div className={styles.metricLabel}>Chuẩn bảo mật Google</div>
+            <div className={styles.metricLabel}>{lang === 'en' ? 'Google Security Standard' : 'Chuẩn bảo mật Google'}</div>
           </div>
           <div>
             <div className={styles.metricValue}>100%</div>
-            <div className={styles.metricLabel}>Toàn quyền kiểm soát tệp</div>
+            <div className={styles.metricLabel}>{lang === 'en' ? 'User Data Ownership' : 'Toàn quyền kiểm soát tệp'}</div>
           </div>
           <div>
             <div className={styles.metricValue}>∞</div>
-            <div className={styles.metricLabel}>Bộ sưu tập & Gắn nhãn</div>
+            <div className={styles.metricLabel}>{lang === 'en' ? 'Collections & Tags' : 'Bộ sưu tập & Gắn nhãn'}</div>
           </div>
         </div>
       </section>
@@ -535,12 +687,16 @@ export const HomePage: React.FC = () => {
           ========================================================= */}
       <section className={styles.bottomCta}>
         <div className={styles.ctaCard}>
-          <h2 className={styles.ctaTitle}>Làm chủ không gian dữ liệu ngay hôm nay</h2>
+          <h2 className={styles.ctaTitle}>
+            {lang === 'en' ? 'Take Control of Your Cloud Workspace' : 'Làm chủ không gian dữ liệu ngay hôm nay'}
+          </h2>
           <p className={styles.ctaSubtext}>
-            Đơn giản, mượt mà và trực quan trên mọi nền tảng thiết bị.
+            {lang === 'en'
+              ? 'Simple, responsive, and secure file management across all your devices.'
+              : 'Đơn giản, mượt mà và trực quan trên mọi nền tảng thiết bị.'}
           </p>
           <Link to={user ? "/app" : "/register"} className={styles.btnWhiteCta}>
-            <span>{user ? "Mở Bảng điều khiển" : "Khởi đầu hoàn toàn miễn phí"}</span>
+            <span>{user ? (lang === 'en' ? "Open Dashboard" : "Mở Bảng điều khiển") : (lang === 'en' ? "Start for Free" : "Khởi đầu hoàn toàn miễn phí")}</span>
             <ArrowRight size={18} />
           </Link>
         </div>
@@ -549,19 +705,22 @@ export const HomePage: React.FC = () => {
       {/* Footer with Compliance Links */}
       <footer className={styles.footer}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-          <p>© 2026 DriveManager (https://drive.vplatform.dev). Tinh gọn • Bảo mật • Đồng bộ tức thì.</p>
+          <p>© 2026 DriveManager (https://drive.vplatform.dev). {lang === 'en' ? 'Minimalist • Secure • Instant Sync.' : 'Tinh gọn • Bảo mật • Đồng bộ tức thì.'}</p>
           <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center', fontSize: '13px' }}>
-            <Link to="/privacy" style={{ color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 500 }}>
-              Chính sách Quyền riêng tư (Privacy Policy)
+            <Link to="/privacy" style={{ color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 600 }}>
+              {lang === 'en' ? 'Privacy Policy' : 'Chính sách Quyền riêng tư (Privacy Policy)'}
             </Link>
             <Link to="/terms" style={{ color: 'var(--color-text-muted)', textDecoration: 'none' }}>
-              Điều khoản Dịch vụ (Terms of Service)
+              {lang === 'en' ? 'Terms of Service' : 'Điều khoản Dịch vụ (Terms of Service)'}
             </Link>
             <Link to="/privacy#google-limited-use" style={{ color: 'var(--color-text-muted)', textDecoration: 'none' }}>
               Google API Limited Use Disclosure
             </Link>
+            <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-text-muted)', textDecoration: 'none' }}>
+              {lang === 'en' ? 'Revoke Google Permissions' : 'Thu hồi quyền Google Drive'}
+            </a>
             <a href="mailto:phuxp17@gmail.com" style={{ color: 'var(--color-text-muted)', textDecoration: 'none' }}>
-              Liên hệ hỗ trợ: phuxp17@gmail.com
+              {lang === 'en' ? 'Contact Support: phuxp17@gmail.com' : 'Liên hệ hỗ trợ: phuxp17@gmail.com'}
             </a>
           </div>
         </div>
