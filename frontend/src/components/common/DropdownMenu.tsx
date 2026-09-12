@@ -14,18 +14,35 @@ export interface DropdownMenuProps {
   trigger: React.ReactNode;
   items: (DropdownMenuItem | 'separator')[];
   align?: 'start' | 'center' | 'end';
+  side?: 'top' | 'right' | 'bottom' | 'left';
+  sideOffset?: number;
+  alignOffset?: number;
+  collisionPadding?: number | { top?: number; right?: number; bottom?: number; left?: number };
 }
 
 export const DropdownMenu: React.FC<DropdownMenuProps> = ({
   trigger,
   items,
   align = 'end',
+  side = 'bottom',
+  sideOffset = 5,
+  alignOffset = 0,
+  collisionPadding = 12,
 }) => {
   return (
     <Dropdown.Root>
       <Dropdown.Trigger asChild>{trigger}</Dropdown.Trigger>
       <Dropdown.Portal>
-        <Dropdown.Content className={styles.content} align={align} sideOffset={5}>
+        <Dropdown.Content
+          className={styles.content}
+          align={align}
+          side={side}
+          sideOffset={sideOffset}
+          alignOffset={alignOffset}
+          avoidCollisions={true}
+          collisionPadding={collisionPadding}
+          sticky="always"
+        >
           {items.map((item, index) => {
             if (item === 'separator') {
               return <Dropdown.Separator key={`sep-${index}`} className={styles.separator} />;
@@ -37,8 +54,8 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
                 disabled={item.disabled}
                 onSelect={item.onClick}
               >
-                {item.icon && <span>{item.icon}</span>}
-                <span>{item.label}</span>
+                {item.icon && <span className={styles.itemIcon}>{item.icon}</span>}
+                <span className={styles.itemLabel}>{item.label}</span>
               </Dropdown.Item>
             );
           })}

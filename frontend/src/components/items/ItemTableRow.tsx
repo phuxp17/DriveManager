@@ -201,8 +201,9 @@ export const ItemTableRow: React.FC<ItemTableRowProps> = ({ item, actions, curre
 
       <div className={styles.actionsCol}>
         <button
+          type="button"
           onClick={() => actions.onOpen(item)}
-          aria-label="Mở"
+          aria-label={item.type === 'LINK' ? 'Mở liên kết' : 'Mở nội dung'}
           style={{
             padding: '6px',
             color: 'var(--color-text-muted)',
@@ -217,7 +218,9 @@ export const ItemTableRow: React.FC<ItemTableRowProps> = ({ item, actions, curre
         <DropdownMenu
           trigger={
             <button
+              type="button"
               aria-label="Tùy chọn khác"
+              title="Tùy chọn khác"
               style={{
                 padding: '6px',
                 color: 'var(--color-text-muted)',

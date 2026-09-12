@@ -1,25 +1,49 @@
 .content {
   min-width: 180px;
+  max-width: min(calc(100vw - 24px), 320px);
+  max-height: var(--radix-dropdown-menu-content-available-height, calc(100vh - 24px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background-color: var(--color-surface);
   border-radius: var(--radius-md);
   padding: 6px;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg, 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1));
   border: 1px solid var(--color-border);
-  z-index: 90;
+  z-index: 120;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
   animation: fadeIn 100ms ease-out;
+}
+
+.content::-webkit-scrollbar {
+  width: 5px;
+}
+
+.content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.content::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+.content::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-subtle);
 }
 
 .item {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
+  font-size: 13.5px;
   color: var(--color-text);
-  padding: 8px 10px;
+  padding: 7px 10px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   user-select: none;
   outline: none;
+  white-space: nowrap;
   transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
@@ -28,12 +52,42 @@
   color: var(--color-primary);
 }
 
+.itemIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: var(--color-text-muted);
+}
+
+.item:hover .itemIcon,
+.item:focus .itemIcon {
+  color: var(--color-primary);
+}
+
+.itemLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .dangerItem {
   color: var(--color-danger);
 }
 
 .dangerItem:hover, .dangerItem:focus {
   background-color: var(--color-danger-subtle);
+  color: var(--color-danger-hover);
+}
+
+.dangerItem .itemIcon {
+  color: var(--color-danger);
+}
+
+.dangerItem:hover .itemIcon,
+.dangerItem:focus .itemIcon {
   color: var(--color-danger-hover);
 }
 
@@ -46,10 +100,10 @@
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(-4px);
+    transform: scale(0.97);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: scale(1);
   }
 }
